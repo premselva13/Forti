@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+/* ————————————————————————————————————————————————
+   THE FABRIC EXCHANGE — design tokens
+   Cinematic dark. Bloomberg terminal meets premium keynote.
+   ———————————————————————————————————————————————— */
+
+@theme {
+  /* Surfaces — near-black ladder */
+  --color-ink-950: #0a0a0b; /* page background */
+  --color-ink-900: #111113; /* raised panels */
+  --color-ink-850: #16161a; /* cards */
+  --color-ink-800: #1c1c21; /* hover / inset */
+  --color-ink-700: #26262c; /* hairline rules */
+  --color-ink-600: #34343c; /* strong rules / borders */
+
+  /* Text */
+  --color-fg: #f2f2f0; /* high-emphasis */
+  --color-fg-mid: #a8a8b0; /* body on dark */
+  --color-fg-low: #71717a; /* captions, meta */
+
+  /* Fortinet red — discipline. Signals, active states, critical data.
+     --color-red is fills / large display only (3.9:1 on ink-950).
+     --color-red-hi is the lifted red for small text (5.6:1 — WCAG AA). */
+  --color-red: #da291c;
+  --color-red-hi: #ff4438;
+
+  /* Amber — opportunity / growth signals only */
+  --color-amber: #f0a830;
+
+  /* Green — Native / win states only. Never decorative. */
+  --color-win: #3dd68c;
+
+  /* Type */
+  --font-display: "Instrument Serif", ui-serif, Georgia, serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+
+  --animate-ticker: ticker 60s linear infinite;
+
+  @keyframes ticker {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+}
+
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-ink-950 text-fg font-sans antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-red) 45%, transparent);
+  color: var(--color-fg);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-amber);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ————— Terminal tables — a signature element ————— */
+.tbl {
+  @apply w-full border-collapse text-sm;
+}
+.tbl thead th {
+  @apply border-b border-ink-600 px-3 py-2 text-left align-bottom font-mono text-[11px] font-medium tracking-widest text-fg-low uppercase;
+}
+.tbl tbody td {
+  @apply border-b border-ink-700 px-3 py-1.5 align-top text-fg-mid;
+}
+.tbl tbody tr {
+  transition: background-color 120ms ease;
+}
+.tbl tbody tr:hover {
+  @apply bg-ink-800/60;
+}
+.tbl .num {
+  @apply text-right font-mono tabular-nums;
+}
+.tbl .sku {
+  @apply font-mono text-fg whitespace-nowrap;
+}
+
+/* Every SKU, price band, spec, and data readout renders monospaced */
+.mono-data {
+  @apply font-mono tabular-nums;
+}
+
+/* Hairline panel */
+.panel {
+  @apply border border-ink-700 bg-ink-900;
+}
+.panel-title {
+  @apply flex items-center justify-between border-b border-ink-700 px-4 py-2.5 font-mono text-[11px] tracking-[0.18em] text-fg-low uppercase;
+}
+
+/* Terminal chip / badge base */
+.chip {
+  @apply inline-flex items-center gap-1.5 border px-2 py-0.5 font-mono text-[11px] tracking-wider uppercase;
+}
+
+/* Editorial display headline */
+.display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+  line-height: 1.02;
+  font-weight: 400;
+}
+
+/* Scroll containers for wide tables */
+.tbl-scroll {
+  @apply overflow-x-auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-ink-600) transparent;
+}
+
+/* Reduced motion: kill ticker + smooth scroll */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-ticker {
+    animation: none !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
