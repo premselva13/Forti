@@ -4,6 +4,14 @@ A design exploration for the next generation of the partner platform, inspired b
 FortiSOC's fabric aesthetic and built for one audience: **people who sell
 cybersecurity for a living**.
 
+**➜ Direction chosen: Option 3.** The full interactive build lives in
+[`the-briefing-platform.html`](the-briefing-platform.html) — six views (Briefing,
+Pipeline, Whitespace, Renewals, Quote Lab, Bench) plus a ⌘K search-and-ask
+palette, deal drawers with stage/protection/attach actions, a deal-registration
+wizard, a renewals radar whose commits update the at-risk number everywhere, and
+a QBR deck generated from live state. Demo state persists to `localStorage`
+("Reset demo state" in the footer clears it).
+
 Open **`index.html`** for the gallery, or jump straight in:
 
 | # | Prototype | One-liner |

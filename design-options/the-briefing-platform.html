@@ -1,0 +1,1446 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Briefing — Fortinet Partner Platform (interactive build)</title>
+<style>
+  /* ============================================================
+     THE BRIEFING — PLATFORM BUILD-OUT
+     Interactive prototype of the full partner platform in the
+     Option-3 design language. Six views, one data model,
+     state persisted to localStorage. No build step, no network.
+     Palette validated (dataviz six checks) on surface #FAF9F7.
+     ============================================================ */
+  :root {
+    --page:      #FAF9F7;
+    --surface:   #FFFFFF;
+    --ink:       #17170F;
+    --ink-2:     #55534E;
+    --muted:     #8B8983;
+    --hairline:  rgba(23,23,15,0.10);
+    --grid:      #ECEBE6;
+    --brand:     #DA291C;
+    --teal:      #1187A8;
+    --teal-deep: #0D5368;
+    --track:     #D9EAEF;
+    --good:      #0CA30C;
+    --good-ink:  #0A5D0A;
+    --warning:   #FAB219;
+    --warn-ink:  #7A5200;
+    --critical:  #D03B3B;
+    --crit-ink:  #8E1F1F;
+    --seq-1: #CFE5EC; --seq-2: #A8CFDB; --seq-3: #7AB8C9; --seq-4: #54A0B4;
+    --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+    --sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --ease: cubic-bezier(.22,1,.36,1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: var(--page); color: var(--ink); font-family: var(--sans); }
+  ::selection { background: rgba(218,41,28,0.15); }
+  body { font-size: 14px; line-height: 1.5; }
+  button { font: inherit; cursor: pointer; }
+  .page { max-width: 1160px; margin: 0 auto; padding: 0 32px 90px; }
+
+  /* ---------- masthead ---------- */
+  .masthead {
+    display: flex; align-items: center; gap: 12px; padding: 16px 0;
+    border-bottom: 1px solid var(--hairline);
+    position: sticky; top: 0; z-index: 40;
+    background: linear-gradient(rgba(250,249,247,0.96), rgba(250,249,247,0.9));
+    backdrop-filter: blur(8px);
+  }
+  .fmark { width: 30px; height: 30px; border-radius: 7px; background: var(--brand); display: grid; place-items: center; flex: none; }
+  .who { font-weight: 600; font-size: 14px; white-space: nowrap; }
+  .who span { color: var(--muted); font-weight: 400; }
+  .masthead nav { display: flex; gap: 1px; margin-left: 8px; flex-wrap: wrap; }
+  .masthead nav button {
+    border: none; background: none; color: var(--ink-2); font-size: 12.5px; font-weight: 500;
+    padding: 7px 10px; border-radius: 99px; transition: background .2s, color .2s; white-space: nowrap;
+  }
+  .masthead nav button:hover { background: #F1F0EB; color: var(--ink); }
+  .masthead nav button[aria-current="page"] { background: var(--ink); color: #fff; }
+  .masthead .grow { flex: 1; }
+  .kbtn {
+    display: inline-flex; align-items: center; gap: 7px;
+    border: 1px solid var(--hairline); background: var(--surface); border-radius: 99px;
+    color: var(--ink-2); font-size: 12.5px; padding: 7px 12px; transition: border-color .2s, color .2s;
+  }
+  .kbtn:hover { border-color: rgba(23,23,15,0.25); color: var(--ink); }
+  .kbtn kbd { font: 600 10.5px var(--mono); background: #F1F0EB; border-radius: 5px; padding: 2px 6px; color: var(--ink-2); }
+  .btn-brand {
+    font-weight: 600; font-size: 13px; color: #fff; background: var(--brand); border: none;
+    padding: 9px 16px; border-radius: 99px; transition: transform .2s, box-shadow .2s; white-space: nowrap;
+  }
+  .btn-brand:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(218,41,28,0.3); }
+
+  /* ---------- shared blocks ---------- */
+  .view { display: none; }
+  .view.active { display: block; animation: viewIn .45s var(--ease); }
+  @keyframes viewIn { from { opacity: 0; transform: translateY(14px); } }
+  .greeting { padding: 44px 0 6px; }
+  .kicker { font: 600 11px var(--mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--brand); }
+  h1.headline { font: 400 40px/1.15 var(--serif); letter-spacing: -0.01em; margin-top: 12px; max-width: 26ch; }
+  .dateline { margin-top: 10px; color: var(--muted); font-size: 13px; }
+  section.block { margin-top: 48px; }
+  .block-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 18px; }
+  .block-head h2 { font: 400 23px var(--serif); }
+  .block-head .note { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .block-head .rule { flex: 1; height: 1px; background: var(--hairline); }
+  .card { background: var(--surface); border: 1px solid var(--hairline); border-radius: 16px; padding: 22px 24px; }
+  .ghost {
+    border: 1px solid var(--hairline); background: none; border-radius: 99px;
+    font-size: 12px; font-weight: 600; color: var(--ink-2); padding: 6px 13px;
+    transition: border-color .2s, color .2s;
+  }
+  .ghost:hover { border-color: var(--brand); color: var(--brand); }
+  .pill { display: inline-flex; align-items: center; gap: 5px; font: 600 10.5px var(--mono); padding: 3px 9px; border-radius: 99px; white-space: nowrap; }
+  .pill.ok   { color: var(--good-ink); background: rgba(12,163,12,0.1); }
+  .pill.exp  { color: var(--warn-ink); background: rgba(250,178,25,0.16); }
+  .pill.crit { color: var(--crit-ink); background: rgba(208,59,59,0.1); }
+  .pill.info { color: #0B5B71; background: rgba(17,135,168,0.1); }
+  .ptag { font: 600 10px var(--mono); letter-spacing: 0.08em; border: 1px solid var(--hairline); border-radius: 5px; padding: 2.5px 7px; color: var(--ink-2); white-space: nowrap; }
+
+  /* ---------- attention queue ---------- */
+  .attention { display: grid; gap: 10px; margin-top: 30px; }
+  .att-item {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--surface); border: 1px solid var(--hairline); border-radius: 14px;
+    padding: 15px 18px; transition: transform .25s, box-shadow .25s, opacity .4s;
+  }
+  .att-item:hover { transform: translateX(4px); box-shadow: 0 8px 24px rgba(23,23,15,0.06); }
+  .att-item.leaving { opacity: 0; transform: translateX(30px); }
+  .att-idx { font: 400 20px var(--serif); color: var(--muted); width: 20px; flex: none; }
+  .att-body { flex: 1; min-width: 24ch; }
+  .att-body b { font-weight: 600; }
+  .att-body .why { display: block; color: var(--ink-2); font-size: 12.5px; margin-top: 2px; }
+  .sev { display: inline-flex; align-items: center; gap: 6px; font: 600 10.5px var(--mono); letter-spacing: 0.1em; padding: 4px 10px; border-radius: 99px; flex: none; }
+  .sev.crit { color: var(--crit-ink); background: rgba(208,59,59,0.1); }
+  .sev.warn { color: var(--warn-ink); background: rgba(250,178,25,0.14); }
+  .sev.info { color: #0B5B71; background: rgba(17,135,168,0.1); }
+  .att-actions { display: flex; gap: 8px; flex: none; }
+  .att-do {
+    border: none; background: var(--ink); color: #fff; font-size: 12px; font-weight: 600;
+    border-radius: 99px; padding: 7px 14px; transition: background .2s;
+  }
+  .att-do:hover { background: var(--brand); }
+  .queue-clear {
+    background: var(--surface); border: 1px dashed var(--hairline); border-radius: 14px;
+    padding: 26px; text-align: center; color: var(--ink-2);
+  }
+  .queue-clear .big { font: 400 22px var(--serif); color: var(--ink); }
+  .cleared-note { margin-top: 10px; font-size: 12px; color: var(--muted); }
+  .cleared-note button { border: none; background: none; color: var(--teal); font-size: 12px; font-weight: 600; }
+
+  /* ---------- standing ---------- */
+  .standing { display: grid; grid-template-columns: 1.3fr 1fr; gap: 40px; padding: 32px 34px; }
+  .hero-num { font-size: 70px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+  .hero-num .pct { font-size: 32px; color: var(--ink-2); font-weight: 500; }
+  .hero-cap { color: var(--ink-2); margin-top: 10px; font-size: 14px; }
+  .hero-cap b { color: var(--ink); }
+  .meter { position: relative; height: 12px; border-radius: 6px; background: var(--track); margin-top: 24px; }
+  .meter .fill { position: absolute; inset: 0 auto 0 0; width: 0%; border-radius: 6px; background: linear-gradient(90deg, #33879E, #1187A8); transition: width 1.4s var(--ease) .2s; }
+  .meter .pace { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--ink); left: 53.7%; }
+  .meter .pace::after { content: "pace"; position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font: 500 10px var(--mono); color: var(--muted); letter-spacing: 0.08em; }
+  .meter-scale { display: flex; justify-content: space-between; font: 500 10px var(--mono); color: var(--muted); margin-top: 8px; }
+  .standing-side { border-left: 1px solid var(--hairline); padding-left: 40px; display: grid; gap: 16px; align-content: center; }
+  .mini { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .mini .k { color: var(--ink-2); font-size: 13px; }
+  .mini .v { font-weight: 700; font-size: 16.5px; white-space: nowrap; }
+  .mini .v small { color: var(--good-ink); font-weight: 600; font-size: 11px; }
+  .mini .v small.bad { color: var(--crit-ink); }
+
+  /* ---------- charts ---------- */
+  .duo { display: grid; grid-template-columns: 1.35fr 1fr; gap: 18px; }
+  .card h3 { font-size: 14px; font-weight: 600; }
+  .card .sub { color: var(--muted); font-size: 12px; margin-bottom: 16px; }
+  svg.chart { display: block; }
+  svg.chart text { font: 500 10px var(--mono); fill: var(--muted); }
+  svg.chart .dlabel { font: 600 11px var(--sans); fill: var(--ink); }
+  svg.chart .gridline { stroke: var(--grid); stroke-width: 1; }
+  svg.chart .baseline { stroke: #D8D6CE; stroke-width: 1; }
+  .chart-wrap { position: relative; }
+  .xhair { position: absolute; top: 6px; bottom: 34px; width: 1px; background: rgba(23,23,15,0.25); opacity: 0; pointer-events: none; }
+  .mark { cursor: pointer; outline: none; }
+  .mark:hover rect { filter: brightness(1.12); }
+  .mark:focus-visible rect { stroke: var(--brand); stroke-width: 2; }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 14px; }
+  .legend .item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-2); }
+  .legend .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  details.dataview { margin-top: 12px; border-top: 1px solid var(--hairline); padding-top: 9px; }
+  details.dataview summary { cursor: pointer; font: 600 10.5px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); list-style: none; }
+  details.dataview summary:hover { color: var(--brand); }
+  details.dataview table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  details.dataview th, details.dataview td { text-align: right; font-size: 12px; padding: 5px 8px; color: var(--ink-2); border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+  details.dataview th:first-child, details.dataview td:first-child { text-align: left; }
+
+  /* ---------- tables ---------- */
+  table.plain { width: 100%; border-collapse: collapse; }
+  table.plain th { text-align: left; font: 600 10.5px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); padding: 9px 10px; border-bottom: 1px solid var(--hairline); white-space: nowrap; }
+  table.plain td { padding: 11px 10px; border-bottom: 1px solid var(--grid); font-size: 13px; color: var(--ink-2); vertical-align: middle; }
+  table.plain td:first-child { color: var(--ink); font-weight: 500; }
+  table.plain tr:last-child td { border-bottom: none; }
+  table.plain .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.rowlink { cursor: pointer; transition: background .15s; }
+  tr.rowlink:hover { background: #FBFAF6; }
+  tr.just-added { animation: addedFlash 2s var(--ease); }
+  @keyframes addedFlash { 0% { background: rgba(17,135,168,0.12); } 100% { background: transparent; } }
+
+  /* ---------- controls row ---------- */
+  .controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 22px 0 16px; }
+  .search {
+    display: flex; align-items: center; gap: 8px; background: var(--surface);
+    border: 1px solid var(--hairline); border-radius: 99px; padding: 8px 14px; min-width: 220px;
+  }
+  .search input { border: none; outline: none; background: none; font: inherit; color: var(--ink); width: 100%; }
+  .chipbar { display: flex; gap: 6px; flex-wrap: wrap; }
+  .fchip {
+    border: 1px solid var(--hairline); background: var(--surface); color: var(--ink-2);
+    font-size: 12px; font-weight: 600; border-radius: 99px; padding: 7px 13px; transition: all .2s;
+  }
+  .fchip:hover { border-color: rgba(23,23,15,0.3); }
+  .fchip.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+  select.ctl { border: 1px solid var(--hairline); background: var(--surface); color: var(--ink-2); font: 600 12px var(--sans); border-radius: 99px; padding: 8px 12px; outline: none; }
+  .sumstrip { display: flex; gap: 26px; flex-wrap: wrap; margin-top: 6px; }
+  .sumstrip .s { font-size: 13px; color: var(--ink-2); }
+  .sumstrip .s b { color: var(--ink); font-size: 15px; }
+
+  /* ---------- whitespace matrix ---------- */
+  .ws-wrap { overflow-x: auto; }
+  table.ws { border-collapse: separate; border-spacing: 4px; width: 100%; min-width: 760px; }
+  table.ws th { font: 600 10px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 6px 8px; text-align: center; }
+  table.ws th.rowh { text-align: right; white-space: nowrap; font: 600 12px var(--sans); color: var(--ink); text-transform: none; letter-spacing: 0; }
+  td.cell {
+    height: 46px; min-width: 86px; border-radius: 9px; text-align: center;
+    font: 600 11.5px var(--sans); cursor: pointer; border: 1px solid transparent;
+    transition: transform .15s, box-shadow .15s; color: var(--ink);
+  }
+  td.cell:hover { transform: scale(1.05); box-shadow: 0 6px 16px rgba(23,23,15,0.12); z-index: 2; position: relative; }
+  td.cell.sel { outline: 2px solid var(--ink); }
+  td.cell.open { background: var(--surface); border: 1px dashed rgba(23,23,15,0.2); color: var(--muted); }
+  td.cell.eol  { background: rgba(250,178,25,0.13); border: 1px solid rgba(250,178,25,0.5); color: var(--warn-ink); }
+  td.cell.play { background: var(--surface); border: 1px solid rgba(17,135,168,0.5); color: #0B5B71; }
+  td.cell.na { background: none; border: none; color: var(--grid); cursor: default; }
+  td.cell.na:hover { transform: none; box-shadow: none; }
+  .ws-detail { border-left: 3px solid var(--teal); background: #F4F8F9; border-radius: 12px; padding: 18px 20px; margin-top: 18px; display: none; }
+  .ws-detail.show { display: block; animation: viewIn .3s var(--ease); }
+  .ws-detail h4 { font: 400 19px var(--serif); }
+  .ws-detail p { font-size: 13px; color: var(--ink-2); margin-top: 6px; max-width: 70ch; }
+  .ws-detail .row { display: flex; gap: 12px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+
+  /* ---------- renewals ---------- */
+  .ren-group { margin-top: 26px; }
+  .ren-group h3 { font: 400 17px var(--serif); color: var(--ink); margin-bottom: 10px; }
+  .ren-row {
+    display: flex; align-items: center; gap: 16px; background: var(--surface);
+    border: 1px solid var(--hairline); border-radius: 12px; padding: 14px 18px; margin-bottom: 8px;
+    transition: opacity .3s;
+  }
+  .ren-row.done { opacity: .55; }
+  .ren-main { flex: 1; min-width: 22ch; }
+  .ren-main b { font-weight: 600; }
+  .ren-main .d { display: block; font-size: 12px; color: var(--ink-2); margin-top: 1px; }
+  .ren-val { font-weight: 700; font-size: 15px; white-space: nowrap; }
+  .commit-btn {
+    border: 1.5px solid var(--ink); background: none; color: var(--ink);
+    font-size: 12px; font-weight: 700; border-radius: 99px; padding: 7px 14px; transition: all .2s;
+  }
+  .commit-btn:hover { background: var(--ink); color: #fff; }
+  .commit-btn.on { background: var(--good-ink); border-color: var(--good-ink); color: #fff; }
+
+  /* ---------- quote lab ---------- */
+  .lab { display: grid; grid-template-columns: 1.5fr 1fr; gap: 18px; align-items: start; }
+  .lab-items .lrow { display: flex; align-items: center; gap: 14px; padding: 13px 0; border-bottom: 1px solid var(--grid); }
+  .lab-items .lrow:last-child { border-bottom: none; }
+  .lrow .nm { flex: 1; min-width: 18ch; }
+  .lrow .nm b { font-weight: 600; font-size: 13.5px; }
+  .lrow .nm span { display: block; font-size: 11.5px; color: var(--muted); }
+  .stepper { display: flex; align-items: center; gap: 2px; }
+  .stepper button {
+    width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--hairline);
+    background: var(--surface); color: var(--ink-2); font-weight: 700; transition: all .15s;
+  }
+  .stepper button:hover { border-color: var(--ink); color: var(--ink); }
+  .stepper .q { width: 52px; text-align: center; font: 700 14px var(--sans); font-variant-numeric: tabular-nums; }
+  .lrow .ln-total { width: 84px; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .lab-side { position: sticky; top: 86px; }
+  .toggle { display: flex; align-items: flex-start; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--grid); cursor: pointer; }
+  .toggle:last-of-type { border-bottom: none; }
+  .toggle input { margin-top: 3px; accent-color: var(--brand); width: 15px; height: 15px; }
+  .toggle .t b { font-size: 13px; font-weight: 600; display: block; }
+  .toggle .t span { font-size: 11.5px; color: var(--muted); }
+  .quote-out { margin-top: 4px; }
+  .qline { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--grid); font-size: 13px; color: var(--ink-2); }
+  .qline b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .qline.total { border-bottom: none; }
+  .qline.total b { font-size: 22px; font-weight: 700; }
+  .qline .up { color: var(--good-ink); font-weight: 700; }
+  .disclaimer { font-size: 10.5px; color: var(--muted); margin-top: 12px; line-height: 1.6; }
+
+  /* ---------- bench ---------- */
+  .cert-grid { display: grid; grid-template-columns: 190px 1fr; gap: 30px; align-items: center; }
+  .ring-wrap { position: relative; width: 150px; height: 150px; margin: 0 auto; }
+  .ring-wrap svg { transform: rotate(-90deg); }
+  .ring-track { fill: none; stroke: var(--track); stroke-width: 10; }
+  .ring-fill { fill: none; stroke: var(--teal); stroke-width: 10; stroke-linecap: round; stroke-dasharray: 326.7; stroke-dashoffset: 326.7; transition: stroke-dashoffset 1.4s var(--ease) .2s; }
+  .ring-label { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+  .ring-label .n { font-size: 30px; font-weight: 700; line-height: 1; }
+  .ring-label .c { font-size: 10.5px; color: var(--muted); margin-top: 4px; }
+  .req { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--grid); font-size: 13px; }
+  .req:last-child { border-bottom: none; }
+  .req .st { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; flex: none; font-size: 11px; font-weight: 800; }
+  .req .st.ok { background: rgba(12,163,12,0.12); color: var(--good-ink); }
+  .req .st.gap { background: rgba(250,178,25,0.2); color: var(--warn-ink); }
+  .req .grow { flex: 1; }
+
+  /* ---------- overlays ---------- */
+  .scrim { position: fixed; inset: 0; background: rgba(23,23,15,0.4); z-index: 80; opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .scrim.show { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(480px, 92vw); z-index: 90;
+    background: var(--surface); border-left: 1px solid var(--hairline);
+    box-shadow: -20px 0 60px rgba(23,23,15,0.15);
+    transform: translateX(105%); transition: transform .35s var(--ease);
+    overflow-y: auto; padding: 26px 28px 40px;
+  }
+  .drawer.show { transform: none; }
+  .drawer .close { position: absolute; top: 18px; right: 18px; border: none; background: #F1F0EB; width: 30px; height: 30px; border-radius: 50%; color: var(--ink-2); font-size: 14px; }
+  .drawer .close:hover { background: var(--ink); color: #fff; }
+  .drawer h3.dr-title { font: 400 24px var(--serif); margin-top: 8px; padding-right: 30px; }
+  .dr-sub { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+  .dr-sec { margin-top: 22px; }
+  .dr-sec h5 { font: 600 10.5px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .stage-step { display: flex; gap: 4px; }
+  .stage-step button {
+    flex: 1; border: none; background: var(--track); height: 30px; font: 600 9.5px var(--mono);
+    letter-spacing: 0.04em; color: var(--teal-deep); transition: background .2s, color .2s;
+  }
+  .stage-step button:first-child { border-radius: 8px 0 0 8px; }
+  .stage-step button:last-child { border-radius: 0 8px 8px 0; }
+  .stage-step button.on { background: var(--teal); color: #fff; }
+  .stage-step button.past { background: var(--seq-3); color: #fff; }
+  .suggest { background: #F4F8F9; border-left: 3px solid var(--teal); border-radius: 10px; padding: 13px 15px; font-size: 12.5px; color: var(--ink-2); }
+  .suggest b { color: var(--ink); }
+  .suggest .row { margin-top: 9px; display: flex; gap: 8px; }
+  .tl { list-style: none; }
+  .tl li { position: relative; padding: 0 0 14px 20px; font-size: 12.5px; color: var(--ink-2); }
+  .tl li::before { content: ""; position: absolute; left: 4px; top: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--seq-4); }
+  .tl li::after { content: ""; position: absolute; left: 7px; top: 14px; bottom: 0; width: 1px; background: var(--grid); }
+  .tl li:last-child::after { display: none; }
+  .tl .when { font: 500 10px var(--mono); color: var(--muted); display: block; }
+  .playblock { border: 1px solid var(--grid); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .playblock h6 { font: 600 10px var(--mono); letter-spacing: 0.14em; color: var(--brand); margin-bottom: 4px; }
+  .playblock p { font-size: 12.5px; color: var(--ink-2); }
+
+  /* modal */
+  .modal {
+    position: fixed; inset: 0; z-index: 95; display: none; place-items: center; padding: 20px;
+  }
+  .modal.show { display: grid; }
+  .modal-card {
+    background: var(--surface); border-radius: 18px; width: min(560px, 94vw);
+    max-height: 88vh; overflow-y: auto; padding: 28px 30px;
+    box-shadow: 0 30px 80px rgba(23,23,15,0.3); animation: viewIn .3s var(--ease);
+  }
+  .modal-card h3 { font: 400 24px var(--serif); }
+  .steps { display: flex; gap: 6px; margin: 16px 0 20px; }
+  .steps i { flex: 1; height: 3px; border-radius: 2px; background: var(--track); }
+  .steps i.on { background: var(--brand); }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font: 600 11px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .field input, .field select {
+    width: 100%; border: 1px solid var(--hairline); border-radius: 10px; padding: 10px 12px;
+    font: inherit; color: var(--ink); background: var(--page); outline: none;
+  }
+  .field input:focus, .field select:focus { border-color: var(--teal); }
+  .checkrow { display: flex; flex-wrap: wrap; gap: 8px; }
+  .checkrow label {
+    display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--hairline);
+    border-radius: 99px; padding: 8px 14px; font-size: 13px; cursor: pointer; transition: all .15s;
+  }
+  .checkrow label:has(input:checked) { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .checkrow input { display: none; }
+  .modal-foot { display: flex; justify-content: space-between; gap: 10px; margin-top: 22px; }
+  pre.payload {
+    background: #17170F; color: #E8E6DE; border-radius: 12px; padding: 16px;
+    font: 400 11px/1.6 var(--mono); overflow-x: auto; margin-top: 8px;
+  }
+  .success-tick { text-align: center; padding: 18px 0 6px; }
+  .success-tick .circ { width: 64px; height: 64px; margin: 0 auto 14px; border-radius: 50%; background: rgba(12,163,12,0.12); display: grid; place-items: center; }
+  .success-tick svg path { stroke: var(--good-ink); stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 30; stroke-dashoffset: 30; animation: tickDraw .6s var(--ease) .15s forwards; }
+  @keyframes tickDraw { to { stroke-dashoffset: 0; } }
+
+  /* command palette */
+  .palette { position: fixed; inset: 0; z-index: 100; display: none; padding-top: 12vh; justify-content: center; align-items: flex-start; }
+  .palette.show { display: flex; }
+  .pal-card {
+    width: min(600px, 94vw); background: var(--surface); border-radius: 16px;
+    box-shadow: 0 30px 80px rgba(23,23,15,0.35); overflow: hidden; animation: viewIn .22s var(--ease);
+  }
+  .pal-in { display: flex; align-items: center; gap: 10px; padding: 16px 18px; border-bottom: 1px solid var(--hairline); }
+  .pal-in input { flex: 1; border: none; outline: none; font: 400 16px var(--sans); background: none; color: var(--ink); }
+  .pal-list { max-height: 46vh; overflow-y: auto; padding: 8px; }
+  .pal-h { font: 600 10px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); padding: 10px 12px 4px; }
+  .pal-item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; border: none; background: none; padding: 10px 12px; border-radius: 10px; font-size: 13.5px; color: var(--ink); }
+  .pal-item .m { color: var(--muted); font-size: 11.5px; margin-left: auto; white-space: nowrap; }
+  .pal-item.hot, .pal-item:hover { background: #F1F0EB; }
+  .pal-ans { margin: 8px 12px; background: #F4F8F9; border-left: 3px solid var(--teal); border-radius: 10px; padding: 13px 15px; font-size: 13px; color: var(--ink-2); }
+  .pal-ans b { color: var(--ink); }
+  .pal-ans .tagline { display: block; font: 500 9.5px var(--mono); letter-spacing: 0.12em; color: var(--muted); margin-top: 8px; text-transform: uppercase; }
+  .pal-foot { display: flex; gap: 16px; padding: 10px 16px; border-top: 1px solid var(--hairline); font: 500 10.5px var(--mono); color: var(--muted); }
+
+  /* QBR overlay */
+  .qbr { position: fixed; inset: 0; z-index: 110; background: var(--page); display: none; }
+  .qbr.show { display: block; }
+  .qbr .slide { position: absolute; inset: 0; display: none; padding: 7vh 9vw; flex-direction: column; justify-content: center; }
+  .qbr .slide.on { display: flex; animation: viewIn .4s var(--ease); }
+  .qbr .sl-kicker { font: 600 12px var(--mono); letter-spacing: 0.2em; text-transform: uppercase; color: var(--brand); }
+  .qbr h2.sl-title { font: 400 clamp(34px, 5vw, 58px)/1.12 var(--serif); margin-top: 18px; max-width: 22ch; }
+  .qbr .sl-body { margin-top: 4vh; max-width: 880px; }
+  .qbr .bignum { font-size: clamp(60px, 9vw, 120px); font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+  .qbr .bignum .pct { font-size: 0.4em; color: var(--ink-2); font-weight: 500; }
+  .qbr .sl-note { color: var(--ink-2); font-size: 15px; margin-top: 14px; max-width: 60ch; }
+  .qbr ul.sl-list { margin-top: 10px; list-style: none; }
+  .qbr ul.sl-list li { padding: 13px 0; border-bottom: 1px solid var(--grid); font-size: 16px; display: flex; gap: 14px; align-items: baseline; }
+  .qbr ul.sl-list li b { font-variant-numeric: tabular-nums; }
+  .qbr ul.sl-list .grow { flex: 1; }
+  .qbr-nav { position: absolute; bottom: 30px; left: 0; right: 0; display: flex; justify-content: center; gap: 8px; }
+  .qbr-nav i { width: 26px; height: 4px; border-radius: 2px; background: var(--track); cursor: pointer; transition: background .2s; }
+  .qbr-nav i.on { background: var(--brand); }
+  .qbr .exit { position: absolute; top: 22px; right: 26px; }
+  .qbr .hint { position: absolute; bottom: 26px; right: 26px; font: 500 10.5px var(--mono); color: var(--muted); letter-spacing: 0.1em; }
+
+  /* toast */
+  .toasts { position: fixed; bottom: 22px; right: 22px; z-index: 120; display: grid; gap: 8px; }
+  .toast {
+    background: var(--ink); color: #fff; border-radius: 12px; padding: 12px 18px;
+    font-size: 13px; box-shadow: 0 12px 30px rgba(23,23,15,0.3);
+    animation: toastIn .35s var(--ease);
+  }
+  .toast b { font-weight: 700; }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(14px); } }
+  .toast.bye { opacity: 0; transform: translateY(8px); transition: all .3s; }
+
+  /* tooltip */
+  .tip { position: fixed; z-index: 130; pointer-events: none; opacity: 0; background: var(--ink); color: #fff; border-radius: 8px; padding: 8px 11px; transform: translate(-50%, calc(-100% - 12px)); transition: opacity .12s; box-shadow: 0 10px 30px rgba(23,23,15,0.25); }
+  .tip .t-val { font: 700 15px var(--sans); }
+  .tip .t-lab { display: flex; align-items: center; gap: 6px; font: 500 10.5px var(--mono); opacity: .75; margin-top: 2px; }
+  .tip .t-key { width: 10px; height: 2px; border-radius: 1px; background: var(--teal); }
+
+  .footnote { margin-top: 60px; font: 500 10px var(--mono); letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase; display: flex; gap: 18px; flex-wrap: wrap; }
+  .footnote button { border: none; background: none; color: var(--teal); font: inherit; letter-spacing: inherit; text-transform: inherit; }
+
+  @media (max-width: 920px) {
+    .standing, .duo, .cert-grid, .lab { grid-template-columns: 1fr; }
+    .standing-side { border-left: none; padding-left: 0; border-top: 1px solid var(--hairline); padding-top: 22px; }
+    h1.headline { font-size: 31px; }
+    .lab-side { position: static; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .meter .fill { width: var(--fill-final, 65.2%) !important; }
+    .ring-fill { stroke-dashoffset: 58.8 !important; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ======== MASTHEAD ======== -->
+  <header class="masthead">
+    <span class="fmark"><svg width="14" height="14" viewBox="0 0 16 16"><path d="M1 2h14v3.4H1zM1 6.3h9.2v3.4H1zM1 10.6h14V14H1z" fill="#fff"/></svg></span>
+    <span class="who">CDW Canada <span>· Advanced</span></span>
+    <nav aria-label="Primary" id="nav">
+      <button data-view="briefing" aria-current="page">Briefing</button>
+      <button data-view="pipeline">Pipeline</button>
+      <button data-view="whitespace">Whitespace</button>
+      <button data-view="renewals">Renewals</button>
+      <button data-view="quotelab">Quote Lab</button>
+      <button data-view="bench">Bench</button>
+    </nav>
+    <div class="grow"></div>
+    <button class="kbtn" id="palBtn">Search <kbd>⌘K</kbd></button>
+    <button class="kbtn" id="qbrBtn">▶ QBR</button>
+    <button class="btn-brand" id="regBtn">Register a deal</button>
+  </header>
+
+  <!-- ================= BRIEFING ================= -->
+  <section class="view active" id="view-briefing">
+    <div class="greeting">
+      <span class="kicker" id="kicker">Partner briefing · —</span>
+      <h1 class="headline" id="headline">—</h1>
+      <p class="dateline">Prepared for the CDW Canada Fortinet practice · figures illustrative · refreshed <span id="refreshed">—</span></p>
+    </div>
+
+    <div class="attention" id="attList"></div>
+    <p class="cleared-note" id="clearedNote" hidden></p>
+
+    <section class="block">
+      <div class="block-head"><h2>Where the year stands</h2><span class="rule"></span><span class="note">FY26 · day 196 of 365</span></div>
+      <div class="card standing">
+        <div>
+          <div class="hero-num"><span id="heroPct">0</span><span class="pct">%</span></div>
+          <p class="hero-cap"><b>$2.61M</b> booked against a <b>$4.0M</b> Fortinet target — 11.5 points ahead of calendar pace.</p>
+          <div class="meter" role="meter" aria-valuenow="65.2" aria-valuemin="0" aria-valuemax="100" aria-label="FY26 attainment 65.2 percent; calendar pace 53.7 percent">
+            <div class="fill" id="fill"></div><div class="pace"></div>
+          </div>
+          <div class="meter-scale"><span>$0</span><span>$1M</span><span>$2M</span><span>$3M</span><span>$4M target</span></div>
+        </div>
+        <div class="standing-side">
+          <div class="mini"><span class="k">Open pipeline</span><span class="v" id="miniPipe">—</span></div>
+          <div class="mini"><span class="k">Registered deals</span><span class="v" id="miniDeals">—</span></div>
+          <div class="mini"><span class="k">Renewals at risk · 90d</span><span class="v" id="miniRen">—</span></div>
+          <div class="mini"><span class="k">Growth vs FY25 YTD</span><span class="v">+38% <small>▲</small></span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head"><h2>The shape of the year</h2><span class="rule"></span><span class="note">monthly bookings · USD thousands</span></div>
+      <div class="duo">
+        <div class="card">
+          <h3>Monthly bookings</h3>
+          <p class="sub">January – July FY26 · July is month-to-date</p>
+          <div class="chart-wrap" id="lineWrap">
+            <svg class="chart" viewBox="0 0 720 240" width="100%" role="img" aria-label="Line chart of monthly bookings, table below">
+              <g>
+                <line class="gridline" x1="50" x2="700" y1="16" y2="16"/><text x="42" y="19" text-anchor="end">450</text>
+                <line class="gridline" x1="50" x2="700" y1="76" y2="76"/><text x="42" y="79" text-anchor="end">300</text>
+                <line class="gridline" x1="50" x2="700" y1="136" y2="136"/><text x="42" y="139" text-anchor="end">150</text>
+                <line class="baseline" x1="50" x2="700" y1="196" y2="196"/><text x="42" y="199" text-anchor="end">0</text>
+              </g>
+              <path d="M50 54 L158.3 47.2 L266.7 14.8 L375 60 L483.3 52.8 L591.7 27.2 L700 72 L700 196 L50 196 Z" fill="rgba(17,135,168,0.10)"/>
+              <path d="M50 54 L158.3 47.2 L266.7 14.8 L375 60 L483.3 52.8 L591.7 27.2 L700 72" fill="none" stroke="#1187A8" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+              <circle cx="266.7" cy="14.8" r="6.5" fill="#FAF9F7"/><circle cx="266.7" cy="14.8" r="4.5" fill="#1187A8"/>
+              <circle cx="700" cy="72" r="6.5" fill="#FAF9F7"/><circle cx="700" cy="72" r="4.5" fill="#1187A8"/>
+              <text class="dlabel" x="280" y="24">453 · best month</text>
+              <text class="dlabel" x="694" y="94" text-anchor="end">310 MTD</text>
+              <g>
+                <text x="50" y="222" text-anchor="middle">JAN</text><text x="158.3" y="222" text-anchor="middle">FEB</text>
+                <text x="266.7" y="222" text-anchor="middle">MAR</text><text x="375" y="222" text-anchor="middle">APR</text>
+                <text x="483.3" y="222" text-anchor="middle">MAY</text><text x="591.7" y="222" text-anchor="middle">JUN</text>
+                <text x="700" y="222" text-anchor="middle">JUL</text>
+              </g>
+            </svg>
+            <div class="xhair" id="xhair"></div>
+          </div>
+          <details class="dataview"><summary>View data</summary>
+            <table><thead><tr><th>Month</th><th>Bookings (USD K)</th></tr></thead><tbody>
+              <tr><td>January</td><td>355</td></tr><tr><td>February</td><td>372</td></tr><tr><td>March</td><td>453</td></tr>
+              <tr><td>April</td><td>340</td></tr><tr><td>May</td><td>358</td></tr><tr><td>June</td><td>422</td></tr>
+              <tr><td>July (MTD)</td><td>310</td></tr>
+            </tbody></table>
+          </details>
+        </div>
+
+        <div class="card">
+          <h3>Pipeline by stage</h3>
+          <p class="sub">click a stage to open it in the pipeline</p>
+          <svg class="chart" viewBox="0 0 340 210" width="100%" role="img" aria-label="Funnel of pipeline by stage, table below">
+            <g id="funnelL"></g>
+          </svg>
+          <details class="dataview"><summary>View data</summary>
+            <table><thead><tr><th>Stage</th><th>Open value (USD M)</th></tr></thead><tbody>
+              <tr><td>Discovery</td><td>2.4</td></tr><tr><td>Qualified</td><td>1.9</td></tr><tr><td>Proposal</td><td>1.3</td></tr>
+              <tr><td>Negotiation</td><td>0.8</td></tr><tr><td>Committed</td><td>0.4</td></tr>
+            </tbody></table>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head"><h2>Best next moves</h2><span class="rule"></span><span class="note">ranked by estimated impact · click to open the play</span></div>
+      <div class="duo" style="grid-template-columns:repeat(3,1fr);gap:16px" id="movesRow"></div>
+    </section>
+  </section>
+
+  <!-- ================= PIPELINE ================= -->
+  <section class="view" id="view-pipeline">
+    <div class="greeting">
+      <span class="kicker">Pipeline · the book</span>
+      <h1 class="headline">Every registered deal, and what each one needs next.</h1>
+    </div>
+    <div class="controls">
+      <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="dealSearch" placeholder="Search deals or accounts…" aria-label="Search deals" /></div>
+      <div class="chipbar" id="stageChips"></div>
+      <select class="ctl" id="dealSort" aria-label="Sort deals">
+        <option value="value">Sort · value</option>
+        <option value="close">Sort · close date</option>
+        <option value="prot">Sort · protection</option>
+      </select>
+    </div>
+    <div class="sumstrip" id="pipeSum"></div>
+    <div class="card" style="margin-top:16px;padding:8px 18px">
+      <table class="plain" id="dealTable">
+        <thead><tr><th>Deal</th><th>Pillar</th><th>Stage</th><th class="num">Value</th><th class="num">Close</th><th class="num">Protection</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="dateline" style="margin-top:12px">Showing your named-account book · 13 more house accounts in the full register.</p>
+  </section>
+
+  <!-- ================= WHITESPACE ================= -->
+  <section class="view" id="view-whitespace">
+    <div class="greeting">
+      <span class="kicker">Whitespace · account map</span>
+      <h1 class="headline" id="wsHeadline">—</h1>
+      <p class="dateline">Installed base vs. open ground across your named accounts. Click any cell.</p>
+    </div>
+    <div class="card" style="margin-top:26px">
+      <div class="ws-wrap"><table class="ws" id="wsTable"></table></div>
+      <div class="legend" style="margin-top:18px">
+        <span class="item"><span class="swatch" style="background:var(--seq-2)"></span>Installed base (darker = larger)</span>
+        <span class="item"><span class="swatch" style="background:var(--surface);border:1px dashed rgba(23,23,15,0.3)"></span>Whitespace</span>
+        <span class="item"><span class="swatch" style="background:rgba(250,178,25,0.4)"></span>⚠ Competitor EOL — displacement window</span>
+        <span class="item"><span class="swatch" style="background:var(--surface);border:1px solid rgba(17,135,168,0.6)"></span>● In play (open deal)</span>
+      </div>
+      <div class="ws-detail" id="wsDetail"></div>
+    </div>
+  </section>
+
+  <!-- ================= RENEWALS ================= -->
+  <section class="view" id="view-renewals">
+    <div class="greeting">
+      <span class="kicker">Renewals · 90-day radar</span>
+      <h1 class="headline" id="renHeadline">—</h1>
+      <p class="dateline">Commit a plan on each contract — the at-risk number updates everywhere.</p>
+    </div>
+    <div class="card" style="margin-top:26px">
+      <div class="sumstrip" id="renSum"></div>
+      <div class="meter" style="margin-top:16px" id="renMeterWrap" role="meter" aria-label="Share of expiring value with a committed plan">
+        <div class="fill" id="renFill" style="transition-delay:0s"></div>
+      </div>
+      <div class="meter-scale"><span>committed plan coverage</span><span id="renCovPct">—</span></div>
+    </div>
+    <div id="renGroups"></div>
+  </section>
+
+  <!-- ================= QUOTE LAB ================= -->
+  <section class="view" id="view-quotelab">
+    <div class="greeting">
+      <span class="kicker">Quote lab · directional math</span>
+      <h1 class="headline">Rough out the deal before the partner desk makes it real.</h1>
+    </div>
+    <div class="lab" style="margin-top:26px">
+      <div class="card lab-items">
+        <h3>Build</h3><p class="sub">quantities only — no configuration, no invented pricing</p>
+        <div id="labRows"></div>
+      </div>
+      <div class="lab-side">
+        <div class="card">
+          <h3>Programs</h3>
+          <label class="toggle"><input type="checkbox" id="tgFast" />
+            <span class="t"><b>FortiSASE Fast-Track</b><span>+4 margin pts on SASE lines · window closes Jul 27</span></span></label>
+          <label class="toggle"><input type="checkbox" id="tgSpiff" />
+            <span class="t"><b>SD-WAN displacement SPIFF</b><span>2% payout on FortiGate lines when displacing · ends Sep 25</span></span></label>
+          <div class="quote-out" style="margin-top:14px">
+            <div class="qline"><span>Directional list band</span><b id="qBand">—</b></div>
+            <div class="qline"><span>Est. partner margin <span id="qMarginPct"></span></span><b id="qMargin">—</b></div>
+            <div class="qline"><span>Est. SPIFF payout</span><b id="qSpiff" class="up">—</b></div>
+            <div class="qline total"><span>Deal size (mid)</span><b id="qTotal">$0</b></div>
+          </div>
+          <button class="btn-brand" style="width:100%;margin-top:16px" id="qSend">Send to partner desk →</button>
+          <p class="disclaimer">All figures directional and illustrative — bands, margins, and program terms are placeholders until confirmed by the CDW partner desk and Fortinet channel team. Nothing here is a quote.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= BENCH ================= -->
+  <section class="view" id="view-bench">
+    <div class="greeting">
+      <span class="kicker">Bench · enablement</span>
+      <h1 class="headline">Can the practice deliver what the book is selling?</h1>
+    </div>
+    <div class="duo" style="margin-top:26px">
+      <div class="card">
+        <h3>Certification coverage</h3>
+        <p class="sub">FCP / FCSS across the practice</p>
+        <div class="cert-grid">
+          <div class="ring-wrap">
+            <svg width="150" height="150" viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="ring-track" cx="60" cy="60" r="52"/><circle class="ring-fill" id="ring" cx="60" cy="60" r="52"/>
+            </svg>
+            <div class="ring-label"><div><div class="n">14<span style="color:var(--muted);font-size:18px">/17</span></div><div class="c">engineers certified</div></div></div>
+          </div>
+          <table class="plain">
+            <thead><tr><th>Engineer</th><th>Highest cert</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>M. Tremblay</td><td>FCSS — Network Security</td><td><span class="pill ok">CURRENT</span></td><td></td></tr>
+              <tr><td>A. Osei</td><td>FCSS — SASE</td><td><span class="pill exp">EXPIRES AUG 30</span></td><td><button class="ghost book-exam">Book renewal</button></td></tr>
+              <tr><td>J. Kaur</td><td>FCP — Public Cloud</td><td><span class="pill exp">EXPIRES SEP 12</span></td><td><button class="ghost book-exam">Book renewal</button></td></tr>
+              <tr><td>R. Bouchard</td><td>FCP — Network Security</td><td><span class="pill exp">EXPIRES SEP 28</span></td><td><button class="ghost book-exam">Book renewal</button></td></tr>
+              <tr><td>+ 10 more</td><td>—</td><td><span class="pill ok">CURRENT</span></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Advanced-tier requirements</h3>
+        <p class="sub">what keeps the tier — and what the book needs next</p>
+        <div class="req"><span class="st ok">✓</span><span class="grow">4 × FCP certified</span><b>6 of 4</b></div>
+        <div class="req"><span class="st ok">✓</span><span class="grow">2 × FCSS certified</span><b>3 of 2</b></div>
+        <div class="req"><span class="st gap">!</span><span class="grow">SASE specialization — <span style="color:var(--warn-ink)">needed for the Laurentide deal's margin tier</span></span><b>1 of 2</b></div>
+        <div class="req"><span class="st gap">!</span><span class="grow">OT specialization — <span style="color:var(--warn-ink)">Selkirk Energy is an OT pursuit</span></span><b>0 of 1</b></div>
+        <div class="suggest" style="margin-top:16px">
+          <b>3 exam vouchers</b> sit unused and expire Sep 30. Assigning two to the SASE track closes the specialization gap before the Laurentide close date.
+          <div class="row"><button class="ghost book-exam">Assign vouchers</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <p class="footnote">
+    <span>Prototype · all figures illustrative · The Briefing — platform build</span>
+    <button id="resetBtn">Reset demo state</button>
+  </p>
+</div>
+
+<!-- ======== OVERLAYS ======== -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Details"></aside>
+<div class="modal" id="modal" role="dialog" aria-modal="true"><div class="modal-card" id="modalCard"></div></div>
+
+<div class="palette" id="palette">
+  <div class="pal-card">
+    <div class="pal-in">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B8983" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="palInput" placeholder="Search deals, accounts, plays — or ask a question…" />
+    </div>
+    <div class="pal-list" id="palList"></div>
+    <div class="pal-foot"><span>↑↓ navigate</span><span>↵ open</span><span>esc close</span><span style="margin-left:auto">ask: “how far to target?”</span></div>
+  </div>
+</div>
+
+<div class="qbr" id="qbr" aria-hidden="true">
+  <button class="kbtn exit" id="qbrExit">Esc · exit</button>
+  <div id="qbrSlides"></div>
+  <div class="qbr-nav" id="qbrNav"></div>
+  <span class="hint">← → TO NAVIGATE</span>
+</div>
+
+<div class="toasts" id="toasts"></div>
+<div class="tip" id="tip" role="status" aria-hidden="true">
+  <div class="t-val" id="tipVal"></div>
+  <div class="t-lab"><span class="t-key" id="tipKey"></span><span id="tipLab"></span></div>
+</div>
+
+<script>
+'use strict';
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtK = v => v >= 1000 ? '$' + (v / 1000).toFixed(2).replace(/\.?0+$/, '') + 'M' : '$' + Math.round(v) + 'K';
+
+/* ============ DATA MODEL (illustrative) ============ */
+const STAGES = ['DISCOVERY', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'COMMITTED'];
+const PILLARS = { fg: 'FortiGate', sase: 'FortiSASE', lan: 'LAN Edge', secops: 'Security Ops', svc: 'Services', ot: 'OT Security' };
+
+const DB = {
+  deals: [
+    { id: 'd1', account: 'Northbridge Health', title: 'FortiGate refresh · 120 sites', pillar: 'fg', stage: 3, val: 482, close: 'Aug 08', prot: 41,
+      tl: [['Jul 12', 'SE note: security team asked for FortiAnalyzer sizing'], ['Jul 03', 'Proposal v2 sent — refresh + FortiManager'], ['Jun 18', 'Deal registered · protection approved']],
+      attach: { label: 'Attach FortiAnalyzer + FortiManager', est: 38, why: 'their team already asked for sizing — attach before the refresh closes' } },
+    { id: 'd2', account: 'Laurentide Mining', title: 'FortiSASE · 2,400 seats', pillar: 'sase', stage: 2, val: 356, close: 'Aug 22', prot: 55,
+      tl: [['Jul 10', 'Pilot expanded to 400 seats — latency numbers strong'], ['Jun 26', 'Competitive vs Zscaler — battlecard attached'], ['Jun 12', 'Deal registered']],
+      attach: { label: 'Quote inside the Fast-Track window', est: 14, why: 'the +4pt margin promo closes Jul 27 — two weeks before their board review' } },
+    { id: 'd3', account: 'Prairie Credit Union', title: 'SD-WAN displacement (Meraki)', pillar: 'fg', stage: 1, val: 298, close: 'Sep 05', prot: 12,
+      tl: [['Jul 08', 'Branch latency complaints escalated to CIO'], ['Jun 30', 'Meraki EOL notice hits 40 branches'], ['Jun 21', 'Deal registered']],
+      attach: { label: 'Re-file protection this week', est: 0, why: 'protection lapses in 12 days and this is a competitive displacement' } },
+    { id: 'd4', account: 'Trillium Logistics', title: 'FortiEDR + FortiAnalyzer', pillar: 'secops', stage: 2, val: 214, close: 'Aug 29', prot: 47,
+      tl: [['Jul 06', 'POC report delivered — 3 detections their MDR missed'], ['Jun 15', 'Deal registered']],
+      attach: { label: 'Add FortiSOAR starter', est: 22, why: 'they run a 2-person SOC — automation is the wedge' } },
+    { id: 'd5', account: 'Ville de Rivière', title: 'Campus LAN Edge', pillar: 'lan', stage: 0, val: 188, close: 'Oct 03', prot: 72,
+      tl: [['Jul 02', 'RFP draft shared for comment'], ['Jun 28', 'Deal registered']],
+      attach: { label: 'Position FortiGate at the core', est: 45, why: 'an RFP written around the fabric beats a switch bake-off' } },
+    { id: 'd6', account: 'Selkirk Energy', title: 'OT security · FortiGate Rugged', pillar: 'ot', stage: 3, val: 176, close: 'Aug 15', prot: 38,
+      tl: [['Jul 11', 'Site survey complete — 14 substations'], ['Jun 20', 'Deal registered']],
+      attach: { label: 'Close the OT specialization gap', est: 0, why: 'their procurement scores partner OT credentials — see Bench' } },
+    { id: 'd7', account: 'Harbourview College', title: 'FortiGate + FortiSwitch', pillar: 'fg', stage: 1, val: 132, close: 'Sep 19', prot: 6,
+      tl: [['Jul 09', 'Budget confirmed for fall term'], ['May 30', 'Deal registered']],
+      attach: { label: 'Re-file protection NOW', est: 0, why: 'protection lapses Friday — this is attention item #1' } },
+    { id: 'd8', account: 'Meridian Retail Group', title: 'SonicWall trade-up', pillar: 'fg', stage: 4, val: 121, close: 'Jul 31', prot: 19,
+      tl: [['Jul 13', 'PO in signature loop'], ['Jun 05', 'Deal registered']],
+      attach: { label: 'Book the LAN Edge follow-on', est: 65, why: 'their Meraki switches hit EOL in 90 days — land it while the trade-up glow lasts' } },
+  ],
+  renewals: [
+    { id: 'r1', account: 'Selkirk Energy', what: 'FortiCare renewal · 3yr co-term', val: 126, days: 24, risk: 'high' },
+    { id: 'r2', account: 'Meridian Retail Group', what: 'FortiGuard bundle · 38 sites', val: 88, days: 18, risk: 'high' },
+    { id: 'r3', account: 'Ville de Rivière', what: 'FortiCare · campus stack', val: 64, days: 44, risk: 'med' },
+    { id: 'r4', account: 'Trillium Logistics', what: 'FortiCare + FortiAnalyzer', val: 58, days: 57, risk: 'med' },
+    { id: 'r5', account: 'Harbourview College', what: 'FortiCare · perimeter pair', val: 41, days: 71, risk: 'low' },
+    { id: 'r6', account: 'Prairie Credit Union', what: 'FortiGuard UTP · HQ cluster', val: 35, days: 83, risk: 'low' },
+  ],
+  /* whitespace: owned = installed base $K · est = whitespace opportunity $K · eol = competitor end-of-life · play = open deal id */
+  ws: {
+    'Northbridge Health':   { fg: { owned: 420 }, sase: { est: 140 }, lan: { owned: 85 }, secops: { est: 120 }, svc: { owned: 46 }, ot: { est: 90 } },
+    'Laurentide Mining':    { fg: { owned: 260 }, sase: { play: 'd2' }, lan: { est: 60 }, secops: { owned: 74 }, svc: { owned: 22 }, ot: { est: 150 } },
+    'Prairie Credit Union': { fg: { play: 'd3' }, sase: { est: 90 }, lan: { est: 70, eol: true }, secops: { est: 60 }, svc: { owned: 12 }, ot: null },
+    'Trillium Logistics':   { fg: { owned: 96 }, sase: { est: 110 }, lan: { owned: 44 }, secops: { play: 'd4' }, svc: { owned: 18 }, ot: null },
+    'Ville de Rivière':     { fg: { owned: 132 }, sase: { est: 80 }, lan: { play: 'd5' }, secops: { est: 70 }, svc: { owned: 9 }, ot: null },
+    'Selkirk Energy':       { fg: { owned: 210 }, sase: { est: 100 }, lan: { owned: 36 }, secops: { owned: 58 }, svc: { owned: 31 }, ot: { play: 'd6' } },
+    'Harbourview College':  { fg: { play: 'd7' }, sase: { est: 60 }, lan: { est: 55, eol: true }, secops: { est: 40 }, svc: { owned: 8 }, ot: null },
+    'Meridian Retail Group':{ fg: { play: 'd8' }, sase: { est: 120 }, lan: { est: 65, eol: true }, secops: { est: 50 }, svc: { owned: 14 }, ot: null },
+  },
+  plays: {
+    'secops-attach': { tag: 'ATTACH · ~$85K', title: 'Add Security Ops to the Northbridge refresh',
+      they: '“We already have an MDR service — logging is covered.”',
+      we: 'The refresh puts FortiGates at every site — FortiAnalyzer turns that fleet into the evidence layer their MDR reads, on hardware they already own.',
+      proof: 'Trillium POC: 3 detections their MDR missed, found in FortiAnalyzer within 48 hours.',
+      mine: 'Don’t position it as replacing the MDR — position it as making the MDR accountable.', deal: 'd1' },
+    'meraki-eol': { tag: 'DISPLACE · 3 ACCOUNTS', title: 'Send the Meraki EOL trade-up kit',
+      they: '“Meraki works fine and the dashboard is easy.”',
+      we: 'The dashboard stays easy — but the hardware under it goes end-of-support inside 90 days, and the renewal quote prices like a penalty. Trade-up credits land before the deadline does.',
+      proof: 'Meridian signed the same play in Q2 — 22% below their Meraki renewal, with SD-WAN included.',
+      mine: 'Never lead with “rip and replace” — lead with the renewal invoice.', deal: 'd8' },
+    'sase-fasttrack': { tag: 'PROGRAM · MARGIN', title: 'Quote Laurentide inside the Fast-Track window',
+      they: '“We want to compare Zscaler one more time.”',
+      we: 'Compare away — but the +4pt window prices this proposal for the board packet they’re writing this month, not next quarter.',
+      proof: 'Pilot latency: 12ms median from Sudbury sites — the number their ops lead quoted back to us.',
+      mine: 'The promo is the urgency device, not the pitch — the pilot data is the pitch.', deal: 'd2' },
+  },
+  lab: [
+    { id: 'p1', name: 'FortiGate 120F bundle', sub: 'UTP · 3yr · branch', mid: 9.0, unit: 'bundle', fg: true },
+    { id: 'p2', name: 'FortiGate 200F bundle', sub: 'UTP · 3yr · mid-site', mid: 20.0, unit: 'bundle', fg: true },
+    { id: 'p3', name: 'FortiGate 600F bundle', sub: 'UTP · 3yr · campus core', mid: 60.0, unit: 'bundle', fg: true },
+    { id: 'p4', name: 'FortiSASE seats × 100', sub: 'per 100 seats · annual', mid: 10.0, unit: 'block', sase: true },
+    { id: 'p5', name: 'FortiSwitch 148F', sub: 'access layer', mid: 3.5, unit: 'device' },
+    { id: 'p6', name: 'FortiAP 431F', sub: 'Wi-Fi 6 · tri-radio', mid: 1.0, unit: 'device' },
+    { id: 'p7', name: 'FortiEDR × 100 endpoints', sub: 'per 100 endpoints · annual', mid: 3.2, unit: 'block' },
+  ],
+  attention: [
+    { id: 'a1', sev: 'crit', sevLabel: 'CRITICAL', title: 'Re-file Harbourview College’s deal registration.',
+      why: 'Protection lapses in 6 days — a $132K FortiGate + FortiSwitch opportunity loses pricing cover.', go: () => openDeal('d7') },
+    { id: 'a2', sev: 'warn', sevLabel: 'WATCH', title: '$412K of renewals sit uncommitted inside 90 days.',
+      why: 'Three contracts cover 61% of the exposure — start with Selkirk Energy’s FortiCare bundle.', go: () => showView('renewals') },
+    { id: 'a3', sev: 'info', sevLabel: 'OPPORTUNITY', title: 'The FortiSASE Fast-Track margin window closes July 27.',
+      why: 'Two open SASE deals qualify — quoting this week is worth roughly four margin points.', go: () => openPlay('sase-fasttrack') },
+  ],
+};
+
+/* ============ STATE (persisted) ============ */
+const LS = 'tbp.v1.';
+const load = (k, d) => { try { const v = localStorage.getItem(LS + k); return v ? JSON.parse(v) : d; } catch { return d; } };
+const save = (k, v) => { try { localStorage.setItem(LS + k, JSON.stringify(v)); } catch {} };
+const S = {
+  att: load('att', {}),                 // attention item id -> 'done' | 'snoozed'
+  stages: load('stages', {}),           // deal id -> stage index override
+  attached: load('attached', {}),       // deal id -> extra $K attached
+  refiled: load('refiled', {}),         // deal id -> true (protection re-filed)
+  committed: load('committed', {}),     // renewal id -> true
+  newDeals: load('newDeals', []),       // registered via wizard
+  labQty: load('labQty', { p1: 4, p4: 2 }),
+};
+
+/* derived accessors */
+const allDeals = () => DB.deals.concat(S.newDeals);
+const dealStage = d => S.stages[d.id] ?? d.stage;
+const dealVal = d => d.val + (S.attached[d.id] || 0);
+const dealProt = d => S.refiled[d.id] ? 60 : d.prot;
+const renTotal = () => DB.renewals.reduce((a, r) => a + r.val, 0);
+const renCommitted = () => DB.renewals.filter(r => S.committed[r.id]).reduce((a, r) => a + r.val, 0);
+const openAtt = () => DB.attention.filter(a => !S.att[a.id]);
+
+/* ============ CHROME: toast, tooltip, overlays ============ */
+function toast(html) {
+  const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = html;
+  $('#toasts').appendChild(t);
+  setTimeout(() => { t.classList.add('bye'); setTimeout(() => t.remove(), 350); }, 3200);
+}
+const tip = $('#tip');
+function showTip(val, lab, c, x, y) {
+  $('#tipVal').textContent = val; $('#tipLab').textContent = lab;
+  $('#tipKey').style.background = c || 'var(--teal)';
+  tip.style.left = x + 'px'; tip.style.top = y + 'px'; tip.style.opacity = 1;
+}
+function hideTip() { tip.style.opacity = 0; }
+document.addEventListener('pointermove', e => {
+  const m = e.target.closest('.mark, [data-tip]');
+  if (m && m.dataset.tip) showTip(m.dataset.tip, m.dataset.lab || '', m.dataset.c, e.clientX, e.clientY); else hideTip();
+});
+document.addEventListener('focusin', e => {
+  const m = e.target.closest('.mark');
+  if (m && m.dataset.tip) { const r = m.getBoundingClientRect(); showTip(m.dataset.tip, m.dataset.lab || '', m.dataset.c, r.left + r.width / 2, r.top); }
+});
+document.addEventListener('focusout', hideTip);
+
+const scrim = $('#scrim'), drawer = $('#drawer'), modal = $('#modal');
+function openDrawer(html) { drawer.innerHTML = '<button class="close" aria-label="Close">✕</button>' + html; drawer.classList.add('show'); scrim.classList.add('show'); drawer.querySelector('.close').onclick = closeOverlays; }
+function openModal(html) { $('#modalCard').innerHTML = html; modal.classList.add('show'); scrim.classList.add('show'); }
+function closeOverlays() {
+  drawer.classList.remove('show'); modal.classList.remove('show'); scrim.classList.remove('show');
+  $('#palette').classList.remove('show');
+}
+scrim.addEventListener('click', closeOverlays);
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if ($('#qbr').classList.contains('show')) qbrClose(); else closeOverlays(); }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openPalette(); }
+});
+
+/* ============ ROUTER ============ */
+const VIEWS = ['briefing', 'pipeline', 'whitespace', 'renewals', 'quotelab', 'bench'];
+function showView(name) {
+  if (!VIEWS.includes(name)) name = 'briefing';
+  closeOverlays();
+  VIEWS.forEach(v => $('#view-' + v).classList.toggle('active', v === name));
+  document.querySelectorAll('#nav button').forEach(b => {
+    if (b.dataset.view === name) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
+  location.hash = '#/' + name;
+  window.scrollTo({ top: 0 });
+  ({ briefing: renderBriefing, pipeline: renderPipeline, whitespace: renderWhitespace, renewals: renderRenewals, quotelab: renderLab, bench: renderBench })[name]();
+}
+$('#nav').addEventListener('click', e => { const b = e.target.closest('button'); if (b) showView(b.dataset.view); });
+
+/* ============ BRIEFING ============ */
+function renderBriefing() {
+  const now = new Date();
+  $('#kicker').textContent = 'Partner briefing · ' + now.toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' });
+  $('#refreshed').textContent = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const n = openAtt().length;
+  $('#headline').textContent = n === 0
+    ? 'You’re ahead of pace — the queue is clear. Go sell.'
+    : `You’re ahead of pace, and ${['one thing needs', 'two things need', 'three things need'][n - 1] || n + ' things need'} your attention.`;
+
+  /* attention queue */
+  const list = $('#attList'); list.textContent = '';
+  openAtt().forEach((a, i) => {
+    /* attention copy stays live: item 2 tracks the real uncommitted-renewals number */
+    let title = a.title, why = a.why;
+    if (a.id === 'a2') {
+      const r = renTotal() - renCommitted();
+      title = `$${r}K of renewals sit uncommitted inside 90 days.`;
+      why = r === renTotal() ? a.why : `Down from $${renTotal()}K — ${DB.renewals.filter(x => !S.committed[x.id]).length} contracts still need a plan.`;
+    }
+    const el = document.createElement('div'); el.className = 'att-item';
+    el.innerHTML = `<span class="att-idx">${i + 1}</span><span class="sev ${a.sev}">${a.sevLabel}</span>
+      <span class="att-body"><b>${esc(title)}</b><span class="why">${esc(why)}</span></span>
+      <span class="att-actions"><button class="att-do">Do it →</button><button class="ghost act-snooze">Snooze</button><button class="ghost act-done">Done</button></span>`;
+    el.querySelector('.att-do').onclick = a.go;
+    el.querySelector('.act-snooze').onclick = () => settleAtt(el, a.id, 'snoozed');
+    el.querySelector('.act-done').onclick = () => settleAtt(el, a.id, 'done');
+    list.appendChild(el);
+  });
+  if (n === 0) list.innerHTML = `<div class="queue-clear"><div class="big">Queue clear.</div>Nothing is on fire — the pipeline view knows what to do next.</div>`;
+  const settled = DB.attention.length - n;
+  $('#clearedNote').hidden = settled === 0;
+  $('#clearedNote').innerHTML = settled ? `${settled} item${settled > 1 ? 's' : ''} cleared or snoozed today · <button id="undoAtt">bring back</button>` : '';
+  const u = $('#undoAtt'); if (u) u.onclick = () => { S.att = {}; save('att', S.att); renderBriefing(); };
+
+  /* hero + minis */
+  animNum($('#heroPct'), 65.2, 1);
+  requestAnimationFrame(() => { $('#fill').style.width = '65.2%'; });
+  $('#miniPipe').innerHTML = `$6.8M <small>3.4× coverage</small>`;
+  $('#miniDeals').textContent = `${23 + S.newDeals.length} active`;
+  const risk = renTotal() - renCommitted();
+  $('#miniRen').innerHTML = risk === 0 ? `$0K <small>all committed</small>` : `$${risk}K <small class="bad">uncommitted</small>`;
+
+  /* funnel (click → pipeline filtered) */
+  const F = [['Discovery', 2.4, '#7AB8C9', 0], ['Qualified', 1.9, '#54A0B4', 1], ['Proposal', 1.3, '#33879E', 2], ['Negotiation', 0.8, '#1C6D84', 3], ['Committed', 0.4, '#0D5368', 4]];
+  const fn = $('#funnelL'); fn.textContent = '';
+  F.forEach(([name, v, c, idx], i) => {
+    const y = 14 + i * 38, w = Math.round(v / 2.4 * 222);
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('class', 'mark'); g.setAttribute('tabindex', '0');
+    g.dataset.tip = '$' + v.toFixed(1) + 'M'; g.dataset.lab = name + ' — click to open'; g.dataset.c = c;
+    g.innerHTML = `<text x="82" y="${y + 16}" text-anchor="end">${name}</text>
+      <rect x="90" y="${y}" width="${w}" height="24" rx="4" fill="${c}"/>
+      <text class="dlabel" x="${96 + w}" y="${y + 16}">${v.toFixed(1)}</text>`;
+    const go = () => { showView('pipeline'); setStageFilter(idx); };
+    g.addEventListener('click', go);
+    g.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+    fn.appendChild(g);
+  });
+
+  /* best moves */
+  const moves = $('#movesRow'); moves.textContent = '';
+  Object.entries(DB.plays).forEach(([id, p]) => {
+    const el = document.createElement('button'); el.className = 'card'; el.style.cssText = 'text-align:left;border:1px solid var(--hairline);display:flex;flex-direction:column;gap:8px;transition:transform .25s,box-shadow .25s';
+    el.innerHTML = `<span style="font:600 10px var(--mono);letter-spacing:.14em;color:var(--brand)">${p.tag}</span>
+      <span style="font-size:14.5px;font-weight:600;line-height:1.35">${esc(p.title)}</span>
+      <span style="font-size:12.5px;color:var(--ink-2)">${esc(p.we.slice(0, 96))}…</span>
+      <span style="font-size:13px;font-weight:600;color:var(--ink)">Open the play →</span>`;
+    el.onmouseenter = () => { el.style.transform = 'translateY(-4px)'; el.style.boxShadow = '0 14px 34px rgba(23,23,15,0.08)'; };
+    el.onmouseleave = () => { el.style.transform = ''; el.style.boxShadow = ''; };
+    el.onclick = () => openPlay(id);
+    moves.appendChild(el);
+  });
+}
+function settleAtt(el, id, how) {
+  el.classList.add('leaving');
+  setTimeout(() => { S.att[id] = how; save('att', S.att); renderBriefing(); toast(how === 'done' ? '<b>Cleared.</b> Nice.' : 'Snoozed until tomorrow’s briefing.'); }, reduced ? 0 : 380);
+}
+function animNum(el, target, dec) {
+  if (reduced) { el.textContent = target.toFixed(dec); return; }
+  const t0 = performance.now(), dur = 1300;
+  (function step(t) { const p = Math.min((t - t0) / dur, 1), e = 1 - Math.pow(1 - p, 3); el.textContent = (target * e).toFixed(dec); if (p < 1) requestAnimationFrame(step); })(t0);
+}
+
+/* line-chart crosshair */
+const MONTHS = [['January', 355, 50], ['February', 372, 158.3], ['March', 453, 266.7], ['April', 340, 375], ['May', 358, 483.3], ['June', 422, 591.7], ['July (MTD)', 310, 700]];
+const lineWrap = $('#lineWrap');
+lineWrap.addEventListener('pointermove', e => {
+  const svg = lineWrap.querySelector('svg'), r = svg.getBoundingClientRect();
+  const vx = (e.clientX - r.left) / r.width * 720;
+  let best = 0, bd = 1e9;
+  MONTHS.forEach((m, i) => { const d = Math.abs(m[2] - vx); if (d < bd) { bd = d; best = i; } });
+  const [name, val, mx] = MONTHS[best], px = mx / 720 * r.width;
+  $('#xhair').style.left = px + 'px'; $('#xhair').style.opacity = 1;
+  showTip('$' + val + 'K', name, '#1187A8', r.left + px, e.clientY);
+});
+lineWrap.addEventListener('pointerleave', () => { $('#xhair').style.opacity = 0; hideTip(); });
+
+/* ============ PIPELINE ============ */
+let stageFilter = -1, dealSort = 'value';
+function setStageFilter(i) { stageFilter = i; renderPipeline(); }
+function renderPipeline() {
+  /* chips */
+  const chips = $('#stageChips'); chips.textContent = '';
+  [['All', -1]].concat(STAGES.map((s, i) => [s[0] + s.slice(1).toLowerCase(), i])).forEach(([lab, i]) => {
+    const b = document.createElement('button'); b.className = 'fchip' + (stageFilter === i ? ' on' : ''); b.textContent = lab;
+    b.onclick = () => { stageFilter = i; renderPipeline(); };
+    chips.appendChild(b);
+  });
+  const q = ($('#dealSearch').value || '').toLowerCase();
+  let rows = allDeals().filter(d => stageFilter < 0 || dealStage(d) === stageFilter)
+    .filter(d => !q || (d.account + ' ' + d.title).toLowerCase().includes(q));
+  rows.sort((a, b) => dealSort === 'value' ? dealVal(b) - dealVal(a) : dealSort === 'prot' ? dealProt(a) - dealProt(b) : new Date(a.close + ' 2026') - new Date(b.close + ' 2026'));
+
+  const tot = rows.reduce((a, d) => a + dealVal(d), 0);
+  const c30 = allDeals().filter(d => new Date(d.close + ' 2026') - new Date('Jul 15 2026') < 31 * 864e5).reduce((a, d) => a + dealVal(d), 0);
+  $('#pipeSum').innerHTML = `<span class="s">Shown <b>${fmtK(tot)}</b> · ${rows.length} deals</span>
+    <span class="s">Closing ≤30d <b>${fmtK(c30)}</b></span>
+    <span class="s">Protections &lt;14d <b>${allDeals().filter(d => dealProt(d) < 14).length}</b></span>`;
+
+  const tb = $('#dealTable tbody'); tb.textContent = '';
+  rows.forEach(d => {
+    const tr = document.createElement('tr'); tr.className = 'rowlink' + (d.justAdded ? ' just-added' : '');
+    const p = dealProt(d);
+    const pCls = p <= 7 ? 'crit' : p <= 14 ? 'exp' : 'ok';
+    tr.innerHTML = `<td>${esc(d.account)}<span style="display:block;font-weight:400;font-size:11.5px;color:var(--muted)">${esc(d.title)}</span></td>
+      <td><span class="ptag">${PILLARS[d.pillar] || d.pillar}</span></td>
+      <td><span class="pill info">${STAGES[dealStage(d)]}</span></td>
+      <td class="num" style="font-weight:700;color:var(--ink)">$${dealVal(d)}K</td>
+      <td class="num">${d.close}</td>
+      <td class="num"><span class="pill ${pCls}">${p}D</span></td><td style="color:var(--muted)">→</td>`;
+    tr.onclick = () => openDeal(d.id);
+    tb.appendChild(tr);
+    delete d.justAdded;
+  });
+  if (!rows.length) tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:26px">No deals match.</td></tr>';
+}
+$('#dealSearch').addEventListener('input', renderPipeline);
+$('#dealSort').addEventListener('change', e => { dealSort = e.target.value; renderPipeline(); });
+
+/* deal drawer */
+function openDeal(id) {
+  const d = allDeals().find(x => x.id === id); if (!d) return;
+  const st = dealStage(d), p = dealProt(d);
+  openDrawer(`
+    <span class="ptag">${PILLARS[d.pillar] || d.pillar}</span>
+    <h3 class="dr-title">${esc(d.account)}</h3>
+    <p class="dr-sub">${esc(d.title)} · closes ${d.close} · <b style="color:var(--ink)">$${dealVal(d)}K</b></p>
+    <div class="dr-sec"><h5>Stage — click to move</h5><div class="stage-step" id="drStages">
+      ${STAGES.map((s, i) => `<button class="${i === st ? 'on' : i < st ? 'past' : ''}" data-i="${i}">${s.slice(0, 4)}</button>`).join('')}
+    </div></div>
+    <div class="dr-sec"><h5>Deal protection</h5>
+      <p style="font-size:13px;color:var(--ink-2)">Registration cover: <span class="pill ${p <= 7 ? 'crit' : p <= 14 ? 'exp' : 'ok'}">${p} DAYS</span>
+      ${S.refiled[d.id] ? ' · re-filed ✓' : ''}</p>
+      ${p < 60 ? `<div class="row" style="margin-top:10px"><button class="ghost" id="drRefile">Re-file protection (60d)</button></div>` : ''}
+    </div>
+    ${d.attach ? `<div class="dr-sec"><h5>Suggested move</h5><div class="suggest"><b>${esc(d.attach.label)}${d.attach.est ? ` · est. +$${d.attach.est}K` : ''}</b> — ${esc(d.attach.why)}.
+      ${d.attach.est && !S.attached[d.id] ? `<div class="row"><button class="att-do" id="drAttach">Add attach line</button></div>` : S.attached[d.id] ? `<div class="row"><span class="pill ok">ATTACHED +$${S.attached[d.id]}K</span></div>` : ''}
+    </div></div>` : ''}
+    <div class="dr-sec"><h5>Activity</h5><ul class="tl">
+      ${(d.tl || []).map(([w, t]) => `<li><span class="when">${w}</span>${esc(t)}</li>`).join('')}
+    </ul></div>
+    <div class="dr-sec"><button class="btn-brand" style="width:100%" id="drQuote">Generate quote request →</button></div>
+  `);
+  drawer.querySelector('#drStages').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    S.stages[d.id] = +b.dataset.i; save('stages', S.stages);
+    toast(`<b>${esc(d.account)}</b> moved to ${STAGES[+b.dataset.i]}.`);
+    openDeal(id); renderPipelineIfActive();
+  });
+  const rf = drawer.querySelector('#drRefile');
+  if (rf) rf.onclick = () => {
+    S.refiled[d.id] = true; save('refiled', S.refiled);
+    if (d.id === 'd7') { S.att.a1 = 'done'; save('att', S.att); }
+    toast('<b>Protection re-filed</b> — 60 days of cover (demo).');
+    openDeal(id); renderPipelineIfActive();
+  };
+  const at = drawer.querySelector('#drAttach');
+  if (at) at.onclick = () => {
+    S.attached[d.id] = d.attach.est; save('attached', S.attached);
+    toast(`<b>+$${d.attach.est}K attached</b> to ${esc(d.account)}.`);
+    openDeal(id); renderPipelineIfActive();
+  };
+  drawer.querySelector('#drQuote').onclick = () => {
+    const payload = { type: 'QUOTE_REQUEST', partner: 'CDW-CA-0417', account: d.account, opportunity: d.title,
+      pillar: PILLARS[d.pillar], stage: STAGES[dealStage(d)], est_value_usd_k: dealVal(d),
+      close_date: d.close + ' 2026', protection_days: dealProt(d), requested: new Date().toISOString().slice(0, 10), note: 'Directional — partner desk to confirm.' };
+    openModal(`<h3>Quote request payload</h3><p class="dr-sub">CRM-ready JSON — v2 wires this to the PRM endpoint.</p>
+      <pre class="payload">${esc(JSON.stringify(payload, null, 2))}</pre>
+      <div class="modal-foot"><button class="ghost" onclick="closeOverlays()">Close</button>
+      <button class="btn-brand" id="cpPayload">Copy payload</button></div>`);
+    $('#cpPayload').onclick = () => { navigator.clipboard?.writeText(JSON.stringify(payload, null, 2)); toast('Payload copied.'); };
+  };
+}
+function renderPipelineIfActive() { if ($('#view-pipeline').classList.contains('active')) renderPipeline(); if ($('#view-briefing').classList.contains('active')) renderBriefing(); }
+
+/* play drawer */
+function openPlay(id) {
+  const p = DB.plays[id]; if (!p) return;
+  openDrawer(`
+    <span class="ptag" style="color:var(--brand);border-color:rgba(218,41,28,0.3)">${p.tag}</span>
+    <h3 class="dr-title">${esc(p.title)}</h3>
+    <div class="dr-sec">
+      <div class="playblock"><h6>THEY SAY</h6><p>${esc(p.they)}</p></div>
+      <div class="playblock"><h6>WE SAY</h6><p>${esc(p.we)}</p></div>
+      <div class="playblock"><h6>PROOF</h6><p>${esc(p.proof)}</p></div>
+      <div class="playblock"><h6>LANDMINE</h6><p>${esc(p.mine)}</p></div>
+    </div>
+    <div class="dr-sec"><button class="btn-brand" style="width:100%" id="plGo">Open the deal this feeds →</button></div>
+  `);
+  drawer.querySelector('#plGo').onclick = () => openDeal(p.deal);
+}
+
+/* ============ WHITESPACE ============ */
+function renderWhitespace() {
+  let wsTotal = 0, eolTotal = 0;
+  Object.values(DB.ws).forEach(row => Object.values(row).forEach(c => {
+    if (c && c.est) { wsTotal += c.est; if (c.eol) eolTotal += c.est; }
+  }));
+  $('#wsHeadline').textContent = `There’s ~$${(wsTotal / 1000).toFixed(1)}M of open ground on this map — $${Math.round(eolTotal)}K of it on a displacement clock.`;
+  const t = $('#wsTable');
+  const pk = Object.keys(PILLARS);
+  let html = '<thead><tr><th></th>' + pk.map(k => `<th scope="col">${PILLARS[k]}</th>`).join('') + '</tr></thead><tbody>';
+  Object.entries(DB.ws).forEach(([acct, row]) => {
+    html += `<tr><th class="rowh" scope="row">${esc(acct)}</th>`;
+    pk.forEach(k => {
+      const c = row[k];
+      if (!c) { html += '<td class="cell na">·</td>'; return; }
+      if (c.owned) {
+        const step = c.owned >= 250 ? 'var(--seq-4)' : c.owned >= 120 ? 'var(--seq-3)' : c.owned >= 50 ? 'var(--seq-2)' : 'var(--seq-1)';
+        html += `<td class="cell" style="background:${step}" data-acct="${esc(acct)}" data-p="${k}" data-tip="$${c.owned}K installed" data-lab="${esc(acct)} · ${PILLARS[k]}">$${c.owned}K</td>`;
+      } else if (c.play) {
+        html += `<td class="cell play" data-acct="${esc(acct)}" data-p="${k}" data-tip="In play" data-lab="${esc(acct)} · ${PILLARS[k]} — open deal">● in play</td>`;
+      } else {
+        html += `<td class="cell ${c.eol ? 'eol' : 'open'}" data-acct="${esc(acct)}" data-p="${k}" data-tip="~$${c.est}K opportunity${c.eol ? ' · EOL window' : ''}" data-lab="${esc(acct)} · ${PILLARS[k]}">${c.eol ? '⚠ EOL' : '~$' + c.est + 'K'}</td>`;
+      }
+    });
+    html += '</tr>';
+  });
+  t.innerHTML = html + '</tbody>';
+  t.onclick = e => {
+    const td = e.target.closest('td.cell'); if (!td || td.classList.contains('na')) return;
+    t.querySelectorAll('.sel').forEach(x => x.classList.remove('sel')); td.classList.add('sel');
+    wsDetail(td.dataset.acct, td.dataset.p);
+  };
+}
+function wsDetail(acct, p) {
+  const c = DB.ws[acct][p], det = $('#wsDetail'); det.classList.add('show');
+  const name = PILLARS[p];
+  if (c.owned) {
+    det.innerHTML = `<h4>${esc(acct)} — ${name}: $${c.owned}K installed</h4>
+      <p>Healthy footprint. The move here is protection, not expansion: co-term the support renewal and keep the refresh cycle on your paper. Check the Renewals radar for anything expiring.</p>
+      <div class="row"><button class="ghost" onclick="showView('renewals')">Open renewals →</button></div>`;
+  } else if (c.play) {
+    const d = allDeals().find(x => x.id === c.play);
+    det.innerHTML = `<h4>${esc(acct)} — ${name}: already in play</h4>
+      <p>${esc(d.title)} · ${STAGES[dealStage(d)]} · $${dealVal(d)}K, closing ${d.close}. Push the open deal rather than opening a second front.</p>
+      <div class="row"><button class="att-do" onclick="openDeal('${d.id}')">Open the deal →</button></div>`;
+  } else {
+    det.innerHTML = `<h4>${esc(acct)} — ${name}: ~$${c.est}K whitespace${c.eol ? ' · competitor EOL inside 90 days' : ''}</h4>
+      <p>${c.eol
+        ? 'Their incumbent gear goes end-of-support inside the quarter — the renewal invoice is your opening. Lead with trade-up credits, not rip-and-replace.'
+        : 'No Fortinet footprint in this pillar yet. The install base next door is the wedge: the fabric story sells strongest where FortiGate already sits.'}
+      Estimated deal band ~$${Math.round(c.est * 0.8)}–${Math.round(c.est * 1.2)}K (directional).</p>
+      <div class="row">
+        <button class="att-do" data-ws-add="${esc(acct)}|${p}|${c.est}">+ Add to pipeline as Discovery</button>
+        ${c.eol ? `<button class="ghost" onclick="openPlay('meraki-eol')">Open the EOL play →</button>` : ''}
+      </div>`;
+    det.querySelector('[data-ws-add]').onclick = ev => {
+      const [a, pk, est] = ev.target.dataset.wsAdd.split('|');
+      addDeal({ account: a, title: PILLARS[pk] + ' — whitespace pursuit', pillar: pk, val: +est, close: 'Oct 30', prot: 60, stage: 0 });
+      DB.ws[a][pk] = { play: lastAddedId };
+      toast(`<b>${esc(a)}</b> · ${PILLARS[pk]} added to pipeline.`);
+      renderWhitespace();
+    };
+  }
+}
+
+/* ============ RENEWALS ============ */
+function renderRenewals() {
+  const total = renTotal(), com = renCommitted(), risk = total - com;
+  $('#renHeadline').textContent = risk === 0
+    ? `All $${total}K of expiring value has a committed plan. That’s how quarters get saved.`
+    : `$${risk}K expires inside 90 days without a plan.`;
+  $('#renSum').innerHTML = `<span class="s">Expiring 90d <b>$${total}K</b></span>
+    <span class="s">Committed plan <b style="color:var(--good-ink)">$${com}K</b></span>
+    <span class="s">Still at risk <b style="color:${risk ? 'var(--crit-ink)' : 'var(--good-ink)'}">$${risk}K</b></span>`;
+  const pct = Math.round(com / total * 100);
+  requestAnimationFrame(() => { $('#renFill').style.width = pct + '%'; });
+  $('#renFill').style.setProperty('--fill-final', pct + '%');
+  $('#renCovPct').textContent = pct + '%';
+
+  const groups = [['Next 30 days', r => r.days <= 30], ['31–60 days', r => r.days > 30 && r.days <= 60], ['61–90 days', r => r.days > 60]];
+  const host = $('#renGroups'); host.textContent = '';
+  groups.forEach(([label, fn]) => {
+    const rows = DB.renewals.filter(fn); if (!rows.length) return;
+    const g = document.createElement('div'); g.className = 'ren-group';
+    g.innerHTML = `<h3>${label}</h3>`;
+    rows.forEach(r => {
+      const on = !!S.committed[r.id];
+      const el = document.createElement('div'); el.className = 'ren-row' + (on ? ' done' : '');
+      el.innerHTML = `<span class="ren-main"><b>${esc(r.account)}</b><span class="d">${esc(r.what)} · expires in ${r.days} days</span></span>
+        <span class="pill ${r.risk === 'high' ? 'crit' : r.risk === 'med' ? 'exp' : 'ok'}">${r.risk.toUpperCase()} RISK</span>
+        <span class="ren-val">$${r.val}K</span>
+        <button class="commit-btn ${on ? 'on' : ''}">${on ? '✓ Plan committed' : 'Commit a plan'}</button>`;
+      el.querySelector('.commit-btn').onclick = () => {
+        S.committed[r.id] = !on; save('committed', S.committed);
+        if (!on) toast(`<b>$${r.val}K committed</b> — ${esc(r.account)} renewal has a plan.`);
+        const stillRisk = renTotal() - renCommitted();
+        if (stillRisk < 412 * 0.39 && !S.att.a2) { S.att.a2 = 'done'; save('att', S.att); toast('Attention item cleared: renewals exposure now covered.'); }
+        renderRenewals();
+      };
+      g.appendChild(el);
+    });
+    host.appendChild(g);
+  });
+}
+
+/* ============ QUOTE LAB ============ */
+function renderLab() {
+  const host = $('#labRows'); host.textContent = '';
+  DB.lab.forEach(p => {
+    const q = S.labQty[p.id] || 0;
+    const row = document.createElement('div'); row.className = 'lrow';
+    row.innerHTML = `<span class="nm"><b>${p.name}</b><span>${p.sub} · ~$${p.mid.toFixed(1)}K/${p.unit} mid</span></span>
+      <span class="stepper"><button data-d="-1" aria-label="less">−</button><span class="q">${q}</span><button data-d="1" aria-label="more">+</button></span>
+      <span class="ln-total">${q ? '$' + (q * p.mid).toFixed(1) + 'K' : '—'}</span>`;
+    row.querySelectorAll('.stepper button').forEach(b => b.onclick = () => {
+      S.labQty[p.id] = Math.max(0, (S.labQty[p.id] || 0) + (+b.dataset.d));
+      save('labQty', S.labQty); renderLab();
+    });
+    host.appendChild(row);
+  });
+  calcLab();
+}
+function calcLab() {
+  const mid = DB.lab.reduce((a, p) => a + (S.labQty[p.id] || 0) * p.mid, 0);
+  const fgSum = DB.lab.filter(p => p.fg).reduce((a, p) => a + (S.labQty[p.id] || 0) * p.mid, 0);
+  const saseSum = DB.lab.filter(p => p.sase).reduce((a, p) => a + (S.labQty[p.id] || 0) * p.mid, 0);
+  const fast = $('#tgFast').checked && saseSum > 0, spiff = $('#tgSpiff').checked && fgSum > 0;
+  const mPct = 0.18, mBonus = fast ? 0.04 : 0;
+  const margin = mid * mPct + saseSum * mBonus;
+  const payout = spiff ? fgSum * 0.02 : 0;
+  $('#qBand').textContent = mid ? `$${(mid * 0.92).toFixed(0)}–${(mid * 1.08).toFixed(0)}K` : '—';
+  $('#qMarginPct').textContent = `· ${((mPct + (fast && mid ? mBonus * saseSum / mid : 0)) * 100).toFixed(1)}%`;
+  $('#qMargin').textContent = mid ? `~$${margin.toFixed(1)}K` : '—';
+  $('#qSpiff').textContent = payout ? `~$${payout.toFixed(1)}K` : '—';
+  $('#qTotal').textContent = mid ? `$${mid.toFixed(1)}K` : '$0';
+}
+$('#tgFast').addEventListener('change', calcLab);
+$('#tgSpiff').addEventListener('change', calcLab);
+$('#qSend').addEventListener('click', () => {
+  const lines = DB.lab.filter(p => S.labQty[p.id] > 0).map(p => ({ sku_family: p.name, qty: S.labQty[p.id], mid_usd_k: +(S.labQty[p.id] * p.mid).toFixed(1) }));
+  if (!lines.length) { toast('Add quantities first.'); return; }
+  const payload = { type: 'DESK_REQUEST', partner: 'CDW-CA-0417', lines, programs: { sase_fast_track: $('#tgFast').checked, sdwan_spiff: $('#tgSpiff').checked }, disclaimer: 'Directional only — desk to price.' };
+  openModal(`<h3>Partner desk request</h3><p class="dr-sub">What v2 sends to the desk queue.</p>
+    <pre class="payload">${esc(JSON.stringify(payload, null, 2))}</pre>
+    <div class="modal-foot"><button class="ghost" onclick="closeOverlays()">Close</button>
+    <button class="btn-brand" onclick="closeOverlays();toast('<b>Sent to partner desk</b> (demo) — SLA 4 business hours.')">Send (demo)</button></div>`);
+});
+
+/* ============ BENCH ============ */
+function renderBench() {
+  requestAnimationFrame(() => { $('#ring').style.strokeDashoffset = 326.7 * (1 - 14 / 17); });
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.book-exam');
+  if (b) toast('<b>Voucher applied</b> — exam slot booked (demo).');
+});
+
+/* ============ REGISTER WIZARD ============ */
+let lastAddedId = null, wizStep = 0, wiz = {};
+function addDeal(d) {
+  lastAddedId = 'n' + Date.now();
+  const deal = { id: lastAddedId, tl: [[new Date().toLocaleDateString('en-CA', { month: 'short', day: '2-digit' }), 'Deal registered · protection pending approval']],
+    attach: null, justAdded: true, ...d };
+  S.newDeals.push(deal); save('newDeals', S.newDeals);
+  return deal;
+}
+function openWizard() {
+  wizStep = 0; wiz = { account: '', title: '', val: '', close: '', pillars: [], displace: false };
+  wizardRender();
+}
+function wizardRender() {
+  const stepsBar = `<div class="steps">${[0, 1, 2].map(i => `<i class="${i <= wizStep ? 'on' : ''}"></i>`).join('')}</div>`;
+  if (wizStep === 0) openModal(`<h3>Register a deal</h3>${stepsBar}
+    <div class="field"><label>Account</label><input id="wzAcct" value="${esc(wiz.account)}" placeholder="e.g. Northbridge Health" /></div>
+    <div class="field"><label>Opportunity</label><input id="wzTitle" value="${esc(wiz.title)}" placeholder="e.g. FortiGate refresh · 40 sites" /></div>
+    <div class="field" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <span><label>Est. value (USD K)</label><input id="wzVal" type="number" min="1" value="${esc(wiz.val)}" placeholder="250" /></span>
+      <span><label>Target close</label><input id="wzClose" value="${esc(wiz.close)}" placeholder="e.g. Sep 30" /></span></div>
+    <div class="modal-foot"><button class="ghost" onclick="closeOverlays()">Cancel</button><button class="btn-brand" id="wzNext">Continue →</button></div>`);
+  else if (wizStep === 1) openModal(`<h3>What's in the deal?</h3>${stepsBar}
+    <div class="field"><label>Pillars</label><div class="checkrow">
+      ${Object.entries(PILLARS).map(([k, v]) => `<label><input type="checkbox" value="${k}" ${wiz.pillars.includes(k) ? 'checked' : ''}/>${v}</label>`).join('')}
+    </div></div>
+    <label class="toggle" style="border:none"><input type="checkbox" id="wzDisp" ${wiz.displace ? 'checked' : ''} />
+      <span class="t"><b>Competitive displacement</b><span>flags SPIFF eligibility and stronger protection terms</span></span></label>
+    <div class="modal-foot"><button class="ghost" id="wzBack">← Back</button><button class="btn-brand" id="wzNext">Review →</button></div>`);
+  else if (wizStep === 2) {
+    const payload = { type: 'DEAL_REGISTRATION', partner: 'CDW-CA-0417', account: wiz.account, opportunity: wiz.title,
+      est_value_usd_k: +wiz.val, target_close: wiz.close, pillars: wiz.pillars.map(k => PILLARS[k]),
+      competitive_displacement: wiz.displace, protection_requested_days: 60 };
+    openModal(`<h3>Review & submit</h3>${stepsBar}
+      <pre class="payload">${esc(JSON.stringify(payload, null, 2))}</pre>
+      <div class="modal-foot"><button class="ghost" id="wzBack">← Back</button><button class="btn-brand" id="wzSubmit">Submit registration</button></div>`);
+  } else openModal(`<div class="success-tick"><div class="circ"><svg width="30" height="30" viewBox="0 0 24 24"><path d="M4 12.5 10 18 20 6"/></svg></div>
+      <h3>Registered.</h3><p class="dr-sub" style="margin-top:8px">Protection pending approval — typically 1 business day.<br/>The deal is in your book now.</p>
+      <div class="modal-foot" style="justify-content:center"><button class="btn-brand" id="wzDone">Open the pipeline →</button></div></div>`);
+
+  const nx = $('#wzNext'), bk = $('#wzBack'), sb = $('#wzSubmit'), dn = $('#wzDone');
+  if (nx) nx.onclick = () => {
+    if (wizStep === 0) {
+      wiz.account = $('#wzAcct').value.trim(); wiz.title = $('#wzTitle').value.trim();
+      wiz.val = $('#wzVal').value; wiz.close = $('#wzClose').value.trim() || 'Oct 30';
+      if (!wiz.account || !wiz.title || !+wiz.val) { toast('Account, opportunity, and value are required.'); return; }
+    }
+    if (wizStep === 1) {
+      wiz.pillars = [...document.querySelectorAll('.checkrow input:checked')].map(i => i.value);
+      wiz.displace = $('#wzDisp').checked;
+      if (!wiz.pillars.length) { toast('Pick at least one pillar.'); return; }
+    }
+    wizStep++; wizardRender();
+  };
+  if (bk) bk.onclick = () => { wizStep--; wizardRender(); };
+  if (sb) sb.onclick = () => {
+    addDeal({ account: wiz.account, title: wiz.title, pillar: wiz.pillars[0], val: +wiz.val, close: wiz.close, prot: 60, stage: 0 });
+    wizStep = 3; wizardRender();
+    toast(`<b>${esc(wiz.account)}</b> registered — $${wiz.val}K.`);
+  };
+  if (dn) dn.onclick = () => { closeOverlays(); showView('pipeline'); };
+}
+$('#regBtn').addEventListener('click', openWizard);
+
+/* ============ COMMAND PALETTE ============ */
+function openPalette() { $('#palette').classList.add('show'); scrim.classList.add('show'); $('#palInput').value = ''; palRender(''); setTimeout(() => $('#palInput').focus(), 30); }
+$('#palBtn').addEventListener('click', openPalette);
+$('#palInput').addEventListener('input', e => palRender(e.target.value));
+let palIdx = 0, palActions = [];
+function palAnswer(q) {
+  q = q.toLowerCase();
+  const risk = renTotal() - renCommitted();
+  if (/target|attain|quota|far/.test(q)) return `You're at <b>65.2%</b> of the $4.0M FY26 target — <b>$1.39M to go</b>, with $6.8M open pipeline covering it <b>3.4×</b>. You're 11.5 points ahead of calendar pace.`;
+  if (/risk|renew|expir/.test(q)) return `<b>$${risk}K</b> of renewals inside 90 days still has no committed plan${risk ? ' — Selkirk Energy ($126K, 24d) is the biggest single exposure' : ' — fully covered, nice work'}. Two deal protections expire within 14 days.`;
+  if (/close|month|land/.test(q)) return `Closing inside 30 days: <b>Meridian Retail ($121K, committed)</b> and <b>Northbridge Health ($482K, negotiation)</b>. Northbridge is the one to walk in person.`;
+  if (/best|next|move|do/.test(q)) return `Highest-impact move right now: <b>attach Security Ops to the Northbridge refresh</b> (~$85K, they already asked for sizing). Second: re-file Harbourview's protection before Friday.`;
+  if (/sase|promo|spiff|program/.test(q)) return `<b>FortiSASE Fast-Track</b> (+4 margin pts) closes <b>Jul 27</b> — Laurentide qualifies. The SD-WAN displacement SPIFF (2×) runs to Sep 25 and fits the three Meraki-EOL accounts.`;
+  return null;
+}
+function palRender(q) {
+  const list = $('#palList'); list.textContent = ''; palActions = []; palIdx = 0;
+  const ans = q.trim().length > 2 ? palAnswer(q) : null;
+  if (ans) {
+    const d = document.createElement('div'); d.className = 'pal-ans';
+    d.innerHTML = ans + '<span class="tagline">Prototype logic — wired for FortiAI in v2</span>';
+    list.appendChild(d);
+  }
+  const ql = q.toLowerCase();
+  const add = (group, items) => {
+    const hits = items.filter(([label]) => !ql || label.toLowerCase().includes(ql));
+    if (!hits.length) return;
+    const h = document.createElement('div'); h.className = 'pal-h'; h.textContent = group; list.appendChild(h);
+    hits.slice(0, 5).forEach(([label, meta, fn]) => {
+      const b = document.createElement('button'); b.className = 'pal-item';
+      b.innerHTML = `<span>${esc(label)}</span><span class="m">${esc(meta)}</span>`;
+      b.onclick = () => { closeOverlays(); fn(); };
+      palActions.push(b); list.appendChild(b);
+    });
+  };
+  add('Views', VIEWS.map(v => [v[0].toUpperCase() + v.slice(1), 'view', () => showView(v)]));
+  add('Deals', allDeals().map(d => [`${d.account} — ${d.title}`, '$' + dealVal(d) + 'K', () => openDeal(d.id)]));
+  add('Plays', Object.entries(DB.plays).map(([id, p]) => [p.title, 'play', () => openPlay(id)]));
+  add('Actions', [['Register a deal', '⌘R', openWizard], ['Present QBR', 'deck', qbrOpen], ['Reset demo state', 'danger', resetDemo]]);
+  palHot();
+}
+function palHot() { palActions.forEach((b, i) => b.classList.toggle('hot', i === palIdx)); }
+$('#palInput').addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown') { e.preventDefault(); palIdx = Math.min(palIdx + 1, palActions.length - 1); palHot(); palActions[palIdx]?.scrollIntoView({ block: 'nearest' }); }
+  if (e.key === 'ArrowUp') { e.preventDefault(); palIdx = Math.max(palIdx - 1, 0); palHot(); palActions[palIdx]?.scrollIntoView({ block: 'nearest' }); }
+  if (e.key === 'Enter') { palActions[palIdx]?.click(); }
+});
+
+/* ============ QBR MODE ============ */
+let qbrIdx = 0;
+function qbrSlidesHtml() {
+  const risk = renTotal() - renCommitted();
+  const top = allDeals().slice().sort((a, b) => dealVal(b) - dealVal(a)).slice(0, 4);
+  return [
+    `<span class="sl-kicker">Quarterly business review · FY26 Q3</span>
+     <h2 class="sl-title">CDW Canada × Fortinet</h2>
+     <p class="sl-note">Prepared ${new Date().toLocaleDateString('en-CA', { month: 'long', day: 'numeric', year: 'numeric' })} · generated from the live book · figures illustrative</p>`,
+    `<span class="sl-kicker">Where the year stands</span>
+     <div class="sl-body"><div class="bignum">65.2<span class="pct">%</span></div>
+     <p class="sl-note"><b>$2.61M</b> booked against <b>$4.0M</b> — 11.5 points ahead of pace, +38% over FY25 YTD. $6.8M open pipeline covers the remainder 3.4×.</p></div>`,
+    `<span class="sl-kicker">The book</span>
+     <h2 class="sl-title">Four pursuits carry the quarter.</h2>
+     <ul class="sl-list">${top.map(d => `<li><span class="grow">${esc(d.account)} — ${esc(d.title)}</span><span class="pill info">${STAGES[dealStage(d)]}</span><b>$${dealVal(d)}K</b></li>`).join('')}</ul>`,
+    `<span class="sl-kicker">Risks we're managing</span>
+     <h2 class="sl-title">Three exposures, all with owners.</h2>
+     <ul class="sl-list">
+       <li><span class="grow">Renewals uncommitted inside 90 days</span><b>${risk ? '$' + risk + 'K' : '$0 — covered ✓'}</b></li>
+       <li><span class="grow">Deal protections expiring &lt;14 days</span><b>${allDeals().filter(d => dealProt(d) < 14).length}</b></li>
+       <li><span class="grow">Specialization gaps (SASE, OT) against open pursuits</span><b>2</b></li>
+     </ul>`,
+    `<span class="sl-kicker">Asks & commitments</span>
+     <h2 class="sl-title">What we need from each other.</h2>
+     <ul class="sl-list">
+       <li><span class="grow">Fortinet: Fast-Track window extension for Laurentide's board cycle</span><b>ASK</b></li>
+       <li><span class="grow">Fortinet: MDF for the Meraki-EOL campaign (3 named accounts)</span><b>ASK</b></li>
+       <li><span class="grow">CDW: close both specialization gaps before Sep 30</span><b>COMMIT</b></li>
+       <li><span class="grow">CDW: renewal plan committed on 100% of 90-day expiries</span><b>COMMIT</b></li>
+     </ul>`,
+  ];
+}
+function qbrOpen() {
+  closeOverlays(); qbrIdx = 0;
+  const host = $('#qbrSlides');
+  host.innerHTML = qbrSlidesHtml().map((s, i) => `<div class="slide${i === 0 ? ' on' : ''}">${s}</div>`).join('');
+  $('#qbrNav').innerHTML = qbrSlidesHtml().map((_, i) => `<i class="${i === 0 ? 'on' : ''}" data-i="${i}"></i>`).join('');
+  $('#qbr').classList.add('show'); $('#qbr').setAttribute('aria-hidden', 'false');
+}
+function qbrClose() { $('#qbr').classList.remove('show'); $('#qbr').setAttribute('aria-hidden', 'true'); }
+function qbrGo(i) {
+  const slides = document.querySelectorAll('#qbrSlides .slide');
+  qbrIdx = Math.max(0, Math.min(i, slides.length - 1));
+  slides.forEach((s, j) => s.classList.toggle('on', j === qbrIdx));
+  document.querySelectorAll('#qbrNav i').forEach((d, j) => d.classList.toggle('on', j === qbrIdx));
+}
+$('#qbrBtn').addEventListener('click', qbrOpen);
+$('#qbrExit').addEventListener('click', qbrClose);
+$('#qbrNav').addEventListener('click', e => { const d = e.target.closest('i'); if (d) qbrGo(+d.dataset.i); });
+document.addEventListener('keydown', e => {
+  if (!$('#qbr').classList.contains('show')) return;
+  if (e.key === 'ArrowRight') qbrGo(qbrIdx + 1);
+  if (e.key === 'ArrowLeft') qbrGo(qbrIdx - 1);
+});
+$('#qbr').addEventListener('click', e => {
+  if (e.target.closest('.exit, .qbr-nav')) return;
+  qbrGo(e.clientX > innerWidth / 2 ? qbrIdx + 1 : qbrIdx - 1);
+});
+
+/* ============ RESET & BOOT ============ */
+function resetDemo() { Object.keys(localStorage).filter(k => k.startsWith(LS)).forEach(k => localStorage.removeItem(k)); location.reload(); }
+$('#resetBtn').addEventListener('click', resetDemo);
+
+showView((location.hash.match(/^#\/(\w+)/) || [])[1] || 'briefing');
+</script>
+</body>
+</html>
