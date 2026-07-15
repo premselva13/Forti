@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Option 1 · Fabric Command — Fortinet Partner Dashboard</title>
+<style>
+  /* ============================================================
+     OPTION 1 — FABRIC COMMAND
+     FortiSOC-inspired dark ops aesthetic. The partner's business
+     rendered as a living fabric: product pillars stream into an
+     attainment core, which feeds the four numbers a seller runs
+     their quarter on.
+     Palette validated (dataviz six checks) on surface #0C1A20:
+       categorical  #189EC0 #D55181 #C98500 #9085E9 #199E70
+       ordinal ramp #14536A #186E8C #1E8AAD #2AA6CC #49C0E3
+     ============================================================ */
+  :root {
+    --page:        #081218;
+    --surface:     #0C1A20;
+    --surface-2:   #0F222B;
+    --ink:         #EAF4F6;
+    --ink-2:       #9DB8BF;
+    --muted:       #64828B;
+    --hairline:    #16303A;
+    --grid:        #142832;
+    --accent:      #35CBE8;   /* chrome accent — glow, focus, live */
+    --brand:       #E5484D;   /* Fortinet red — brand + emphasis stream */
+    --good:        #0CA30C;
+    --warning:     #FAB219;
+    --serious:     #EC835A;
+    --critical:    #D03B3B;
+    --cat-1: #189EC0; --cat-2: #D55181; --cat-3: #C98500; --cat-4: #9085E9; --cat-5: #199E70;
+    --ord-1: #14536A; --ord-2: #186E8C; --ord-3: #1E8AAD; --ord-4: #2AA6CC; --ord-5: #49C0E3;
+    --sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: var(--page); color: var(--ink); font-family: var(--sans); }
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(1200px 700px at 42% 30%, rgba(53,203,232,0.055), transparent 60%),
+      radial-gradient(900px 600px at 85% 80%, rgba(229,72,77,0.04), transparent 55%),
+      var(--page);
+  }
+  ::selection { background: rgba(53,203,232,0.3); }
+
+  /* ---------- shell ---------- */
+  .shell { display: grid; grid-template-columns: 56px 1fr; min-height: 100vh; }
+  .rail {
+    border-right: 1px solid var(--hairline);
+    background: rgba(8,18,24,0.7);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 14px 0; gap: 6px; position: sticky; top: 0; height: 100vh;
+  }
+  .rail .logo {
+    width: 32px; height: 32px; border-radius: 8px; background: var(--brand);
+    display: grid; place-items: center; margin-bottom: 14px; flex: none;
+  }
+  .rail .logo svg { display: block; }
+  .rail button {
+    width: 38px; height: 38px; border-radius: 9px; border: 1px solid transparent;
+    background: none; color: var(--muted); cursor: pointer;
+    display: grid; place-items: center; transition: color .18s, background .18s, border-color .18s;
+  }
+  .rail button:hover { color: var(--ink); background: var(--surface-2); }
+  .rail button[aria-current="page"] { color: var(--accent); background: var(--surface-2); border-color: var(--hairline); }
+  .rail .spacer { flex: 1; }
+
+  .main { padding: 0 28px 40px; max-width: 1440px; }
+
+  /* ---------- topbar ---------- */
+  .topbar {
+    display: flex; align-items: center; gap: 18px;
+    padding: 16px 0 14px; border-bottom: 1px solid var(--hairline);
+    position: sticky; top: 0; z-index: 20;
+    background: linear-gradient(rgba(8,18,24,0.92), rgba(8,18,24,0.86));
+    backdrop-filter: blur(8px);
+  }
+  .topbar h1 { font-size: 15px; font-weight: 600; letter-spacing: 0.01em; }
+  .topbar .partner { display: flex; align-items: center; gap: 10px; }
+  .tier {
+    font: 600 10px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent); border: 1px solid rgba(53,203,232,0.35);
+    padding: 5px 8px 4px; border-radius: 99px;
+  }
+  .live {
+    display: inline-flex; align-items: center; gap: 7px;
+    font: 500 11px var(--mono); color: var(--ink-2);
+  }
+  .live .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: livePulse 2.4s ease-in-out infinite; }
+  @keyframes livePulse { 0%,100% { box-shadow: 0 0 0 0 rgba(53,203,232,0.5); } 50% { box-shadow: 0 0 0 6px rgba(53,203,232,0); } }
+  .topbar .grow { flex: 1; }
+  .clock { font: 500 12px var(--mono); color: var(--ink-2); letter-spacing: 0.06em; }
+  .btn {
+    font: 600 12px var(--sans); color: var(--ink); background: var(--surface-2);
+    border: 1px solid var(--hairline); border-radius: 8px; padding: 8px 14px; cursor: pointer;
+    transition: border-color .18s, transform .18s;
+  }
+  .btn:hover { border-color: rgba(53,203,232,0.4); }
+  .btn.brand { background: var(--brand); border-color: transparent; }
+  .btn.brand:hover { transform: translateY(-1px); }
+
+  /* ---------- fabric stage ---------- */
+  .stage {
+    margin-top: 22px;
+    display: grid; grid-template-columns: 1fr 320px; gap: 18px;
+    align-items: stretch;
+  }
+  .fabric-card {
+    position: relative; border: 1px solid var(--hairline); border-radius: 14px;
+    background:
+      radial-gradient(560px 320px at 52% 46%, rgba(53,203,232,0.07), transparent 65%),
+      var(--surface);
+    overflow: hidden; min-height: 460px;
+  }
+  .fabric-card .card-head {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 5;
+    display: flex; align-items: baseline; gap: 10px; padding: 16px 20px;
+  }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .card-sub { font: 400 11px var(--mono); color: var(--muted); }
+  .fabric-card svg.fabric { display: block; width: 100%; height: 100%; position: absolute; inset: 0; }
+
+  .node-label { font: 600 12px var(--sans); fill: var(--ink); }
+  .node-value { font: 500 11px var(--mono); fill: var(--ink-2); }
+  .core-big   { font: 700 44px var(--sans); fill: var(--ink); }
+  .core-cap   { font: 600 10px var(--mono); fill: var(--muted); letter-spacing: 2px; }
+  .core-sub   { font: 500 12px var(--mono); fill: var(--ink-2); }
+
+  .stream      { fill: none; stroke-linecap: round; }
+  .stream.glow { opacity: .22; filter: blur(4px); }
+  .stream.flow { stroke-dasharray: 2 12; animation: flow 1.5s linear infinite; opacity: .9; }
+  @keyframes flow { to { stroke-dashoffset: -14; } }
+  .ring-rotor { transform-origin: 560px 236px; animation: rotor 36s linear infinite; }
+  @keyframes rotor { to { transform: rotate(360deg); } }
+  .pulse { transform-origin: 560px 236px; transform-box: view-box; animation: corePulse 3.2s ease-out infinite; }
+  .pulse.p2 { animation-delay: 1.6s; }
+  @keyframes corePulse {
+    0%   { transform: scale(0.82); opacity: .55; }
+    100% { transform: scale(1.28); opacity: 0; }
+  }
+
+  /* ---------- KPI column ---------- */
+  .kpis { display: grid; grid-template-rows: repeat(4, 1fr); gap: 14px; }
+  .kpi {
+    border: 1px solid var(--hairline); border-radius: 14px; background: var(--surface);
+    padding: 16px 18px; display: flex; flex-direction: column; justify-content: center; gap: 8px;
+    position: relative; overflow: hidden;
+    transition: border-color .2s, transform .2s;
+  }
+  .kpi::before {
+    content: ""; position: absolute; left: 0; top: 12px; bottom: 12px; width: 2px;
+    background: var(--accent); opacity: .7; border-radius: 2px;
+  }
+  .kpi:hover { border-color: rgba(53,203,232,0.35); transform: translateX(-2px); }
+  .kpi .label { font: 600 10px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+  .kpi .value { font-size: 26px; font-weight: 700; letter-spacing: -0.01em; }
+  .kpi .meta { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--ink-2); flex-wrap: wrap; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font: 600 10px var(--mono); padding: 3px 8px; border-radius: 99px;
+    border: 1px solid var(--hairline); color: var(--ink-2);
+  }
+  .chip .sq { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+  .chip.good     { color: #7CD97C; } .chip.good .sq     { background: var(--good); }
+  .chip.warning  { color: #FAD27C; } .chip.warning .sq  { background: var(--warning); }
+  .chip.serious  { color: #F2AE93; } .chip.serious .sq  { background: var(--serious); }
+  .chip.critical { color: #ED9C9C; } .chip.critical .sq { background: var(--critical); }
+
+  /* ---------- chart row ---------- */
+  .charts { margin-top: 18px; display: grid; grid-template-columns: 1.1fr 1fr 1.2fr; gap: 18px; }
+  .card {
+    border: 1px solid var(--hairline); border-radius: 14px; background: var(--surface);
+    padding: 18px 20px 14px;
+  }
+  .card h2 { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .card .sub { font: 400 11px var(--mono); color: var(--muted); margin-bottom: 14px; }
+  .chart-wrap { position: relative; }
+  svg.chart text { font-family: var(--mono); font-size: 10px; fill: var(--muted); }
+  svg.chart .dlabel { font-family: var(--sans); font-size: 11px; font-weight: 600; fill: var(--ink); }
+  svg.chart .gridline { stroke: var(--grid); stroke-width: 1; }
+  svg.chart .baseline { stroke: #1D3944; stroke-width: 1; }
+  .mark { cursor: pointer; outline: none; }
+  .mark:focus-visible rect, .mark:focus-visible circle { stroke: var(--accent); stroke-width: 2; }
+  .mark rect { transition: filter .15s; }
+  .mark:hover rect { filter: brightness(1.25); }
+
+  /* stacked mix */
+  .legend { display: flex; flex-wrap: wrap; gap: 12px 16px; margin-top: 12px; }
+  .legend .item { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--ink-2); }
+  .legend .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+  /* tooltip */
+  .tip {
+    position: fixed; z-index: 60; pointer-events: none; opacity: 0;
+    background: #0A2029; border: 1px solid rgba(53,203,232,0.3); border-radius: 8px;
+    padding: 8px 11px; transform: translate(-50%, calc(-100% - 12px));
+    transition: opacity .12s; min-width: 110px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  .tip .t-val { font: 700 15px var(--sans); color: var(--ink); }
+  .tip .t-lab { display: flex; align-items: center; gap: 6px; font: 500 10px var(--mono); color: var(--ink-2); margin-top: 3px; }
+  .tip .t-key { width: 10px; height: 2px; border-radius: 1px; background: var(--accent); }
+
+  details.dataview { margin-top: 12px; border-top: 1px solid var(--hairline); padding-top: 8px; }
+  details.dataview summary {
+    cursor: pointer; font: 600 10px var(--mono); letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted); list-style: none;
+  }
+  details.dataview summary:hover { color: var(--accent); }
+  details.dataview table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  details.dataview th, details.dataview td {
+    text-align: left; font: 400 11px var(--mono); color: var(--ink-2);
+    padding: 5px 8px 5px 0; border-bottom: 1px solid var(--hairline);
+    font-variant-numeric: tabular-nums;
+  }
+  details.dataview th { color: var(--muted); font-weight: 600; }
+  details.dataview td.num, details.dataview th.num { text-align: right; }
+
+  .footnote { margin-top: 20px; font: 400 10px var(--mono); color: var(--muted); }
+
+  @media (max-width: 1100px) {
+    .stage { grid-template-columns: 1fr; }
+    .kpis { grid-template-rows: none; grid-template-columns: repeat(2, 1fr); }
+    .charts { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <nav class="rail" aria-label="Primary">
+    <div class="logo" title="Fortinet Partner Fabric">
+      <svg width="16" height="16" viewBox="0 0 16 16"><path d="M1 2h14v3.4H1zM1 6.3h9.2v3.4H1zM1 10.6h14V14H1z" fill="#fff"/></svg>
+    </div>
+    <button aria-current="page" title="Command">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>
+    </button>
+    <button title="Pipeline"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V10M10 19V5M16 19v-7M22 19H2"/></svg></button>
+    <button title="Deals"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Z"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></button>
+    <button title="Renewals"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a9 9 0 1 1-2.6-6.3M21 3v6h-6"/></svg></button>
+    <button title="Enablement"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg></button>
+    <div class="spacer"></div>
+    <button title="Settings"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.2 2.2M16.9 16.9l2.2 2.2M2 12h3M19 12h3M4.9 19.1l2.2-2.2M16.9 7.1l2.2-2.2"/></svg></button>
+  </nav>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="partner">
+        <h1>CDW Canada</h1>
+        <span class="tier">Advanced Partner</span>
+      </div>
+      <span class="live"><span class="dot"></span>FABRIC LIVE</span>
+      <div class="grow"></div>
+      <span class="clock" id="clock">—</span>
+      <button class="btn">Deal desk</button>
+      <button class="btn brand">+ Register deal</button>
+    </header>
+
+    <!-- ======== FABRIC STAGE ======== -->
+    <section class="stage" aria-label="Partner fabric overview">
+      <div class="fabric-card">
+        <div class="card-head">
+          <span class="card-title">Partner Fabric — FY26</span>
+          <span class="card-sub">revenue streams by pillar · width ∝ YTD bookings</span>
+        </div>
+        <svg class="fabric" viewBox="0 0 1060 470" preserveAspectRatio="xMidYMid meet" role="img"
+             aria-label="Diagram: five product pillars stream into the FY26 attainment core. FortiGate 1.25 million, FortiSASE 445 thousand, LAN Edge 366 thousand, Security Ops 310 thousand, Services 235 thousand.">
+          <defs>
+            <linearGradient id="gBrand" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#E5484D" stop-opacity=".9"/><stop offset="1" stop-color="#E5484D" stop-opacity=".25"/>
+            </linearGradient>
+            <linearGradient id="gTeal" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#2AA6CC" stop-opacity=".85"/><stop offset="1" stop-color="#2AA6CC" stop-opacity=".2"/>
+            </linearGradient>
+            <linearGradient id="gTealDim" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#186E8C" stop-opacity=".9"/><stop offset="1" stop-color="#186E8C" stop-opacity=".25"/>
+            </linearGradient>
+            <radialGradient id="coreGlow" cx=".5" cy=".5" r=".5">
+              <stop offset="0" stop-color="#35CBE8" stop-opacity=".28"/><stop offset="1" stop-color="#35CBE8" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+
+          <!-- ambient core glow + radar rings -->
+          <circle cx="560" cy="236" r="170" fill="url(#coreGlow)"/>
+          <g class="ring-rotor">
+            <circle cx="560" cy="236" r="128" fill="none" stroke="#1D4B5C" stroke-width="1" stroke-dasharray="3 9"/>
+          </g>
+          <circle cx="560" cy="236" r="96" fill="none" stroke="#16303A" stroke-width="1"/>
+          <circle class="pulse" cx="560" cy="236" r="96" fill="none" stroke="#35CBE8" stroke-width="1"/>
+          <circle class="pulse p2" cx="560" cy="236" r="96" fill="none" stroke="#35CBE8" stroke-width="1"/>
+
+          <!-- streams: node → core (glow underlay, base line, animated flow) -->
+          <!-- FortiGate — brand emphasis -->
+          <g>
+            <path class="stream glow" d="M172 78 C 330 78 400 170 468 208" stroke="#E5484D" stroke-width="16"/>
+            <path class="stream" d="M172 78 C 330 78 400 170 468 208" stroke="url(#gBrand)" stroke-width="7"/>
+            <path class="stream flow" d="M172 78 C 330 78 400 170 468 208" stroke="#FF8A8E" stroke-width="2.5"/>
+          </g>
+          <!-- FortiSASE -->
+          <g>
+            <path class="stream glow" d="M172 158 C 320 160 410 196 474 222" stroke="#2AA6CC" stroke-width="10"/>
+            <path class="stream" d="M172 158 C 320 160 410 196 474 222" stroke="url(#gTeal)" stroke-width="4"/>
+            <path class="stream flow" d="M172 158 C 320 160 410 196 474 222" stroke="#7ADCF2" stroke-width="1.8" style="animation-delay:.3s"/>
+          </g>
+          <!-- LAN Edge -->
+          <g>
+            <path class="stream glow" d="M172 238 C 330 238 420 236 470 236" stroke="#2AA6CC" stroke-width="9"/>
+            <path class="stream" d="M172 238 C 330 238 420 236 470 236" stroke="url(#gTeal)" stroke-width="3.5"/>
+            <path class="stream flow" d="M172 238 C 330 238 420 236 470 236" stroke="#7ADCF2" stroke-width="1.6" style="animation-delay:.7s"/>
+          </g>
+          <!-- Security Ops -->
+          <g>
+            <path class="stream glow" d="M172 318 C 320 316 410 276 474 250" stroke="#186E8C" stroke-width="8"/>
+            <path class="stream" d="M172 318 C 320 316 410 276 474 250" stroke="url(#gTealDim)" stroke-width="3"/>
+            <path class="stream flow" d="M172 318 C 320 316 410 276 474 250" stroke="#5FC4DD" stroke-width="1.5" style="animation-delay:1s"/>
+          </g>
+          <!-- Services -->
+          <g>
+            <path class="stream glow" d="M172 398 C 330 398 400 302 468 264" stroke="#186E8C" stroke-width="7"/>
+            <path class="stream" d="M172 398 C 330 398 400 302 468 264" stroke="url(#gTealDim)" stroke-width="2.5"/>
+            <path class="stream flow" d="M172 398 C 330 398 400 302 468 264" stroke="#5FC4DD" stroke-width="1.4" style="animation-delay:1.3s"/>
+          </g>
+
+          <!-- output streams: core → KPI column -->
+          <g stroke="#1E8AAD" stroke-width="1.5" fill="none" opacity=".65">
+            <path class="stream flow" d="M652 214 C 800 190 920 120 1052 96" style="animation-delay:.2s"/>
+            <path class="stream flow" d="M654 228 C 810 216 930 204 1052 196" style="animation-delay:.5s"/>
+            <path class="stream flow" d="M654 246 C 810 258 930 272 1052 282" style="animation-delay:.8s"/>
+            <path class="stream flow" d="M652 260 C 800 284 920 352 1052 376" style="animation-delay:1.1s"/>
+          </g>
+
+          <!-- pillar nodes -->
+          <g id="pillarNodes">
+            <g transform="translate(60,78)">
+              <circle cx="104" cy="0" r="7" fill="#E5484D"/><circle cx="104" cy="0" r="11" fill="none" stroke="#E5484D" stroke-opacity=".35"/>
+              <text class="node-label" x="92" y="-8" text-anchor="end">FortiGate</text>
+              <text class="node-value" x="92" y="8" text-anchor="end">$1.25M · 48%</text>
+            </g>
+            <g transform="translate(60,158)">
+              <circle cx="104" cy="0" r="6" fill="#2AA6CC"/><circle cx="104" cy="0" r="10" fill="none" stroke="#2AA6CC" stroke-opacity=".35"/>
+              <text class="node-label" x="92" y="-8" text-anchor="end">FortiSASE</text>
+              <text class="node-value" x="92" y="8" text-anchor="end">$445K · 17%</text>
+            </g>
+            <g transform="translate(60,238)">
+              <circle cx="104" cy="0" r="6" fill="#2AA6CC"/><circle cx="104" cy="0" r="10" fill="none" stroke="#2AA6CC" stroke-opacity=".35"/>
+              <text class="node-label" x="92" y="-8" text-anchor="end">LAN Edge</text>
+              <text class="node-value" x="92" y="8" text-anchor="end">$366K · 14%</text>
+            </g>
+            <g transform="translate(60,318)">
+              <circle cx="104" cy="0" r="5.5" fill="#186E8C"/><circle cx="104" cy="0" r="9.5" fill="none" stroke="#186E8C" stroke-opacity=".4"/>
+              <text class="node-label" x="92" y="-8" text-anchor="end">Security Ops</text>
+              <text class="node-value" x="92" y="8" text-anchor="end">$310K · 12%</text>
+            </g>
+            <g transform="translate(60,398)">
+              <circle cx="104" cy="0" r="5.5" fill="#186E8C"/><circle cx="104" cy="0" r="9.5" fill="none" stroke="#186E8C" stroke-opacity=".4"/>
+              <text class="node-label" x="92" y="-8" text-anchor="end">Services</text>
+              <text class="node-value" x="92" y="8" text-anchor="end">$235K · 9%</text>
+            </g>
+          </g>
+
+          <!-- core -->
+          <g>
+            <polygon points="560,158 628,197 628,275 560,314 492,275 492,197"
+                     fill="#0A222C" stroke="#35CBE8" stroke-opacity=".55" stroke-width="1.5"/>
+            <text class="core-cap" x="560" y="206" text-anchor="middle">FY26 ATTAINMENT</text>
+            <text class="core-big" x="560" y="254" text-anchor="middle"><tspan id="coreNum" data-count="65">0</tspan>%</text>
+            <text class="core-sub" x="560" y="284" text-anchor="middle">$2.61M of $4.0M</text>
+          </g>
+        </svg>
+      </div>
+
+      <!-- KPI column -->
+      <div class="kpis" aria-label="Key numbers">
+        <div class="kpi">
+          <span class="label">Open pipeline</span>
+          <span class="value">$<span data-count="6.8" data-dec="1">0</span>M</span>
+          <span class="meta">3.4× coverage of remaining target <span class="chip good"><span class="sq"></span>HEALTHY</span></span>
+        </div>
+        <div class="kpi">
+          <span class="label">Registered deals</span>
+          <span class="value"><span data-count="23">0</span></span>
+          <span class="meta">6 awaiting approval <span class="chip warning"><span class="sq"></span>2 EXPIRE THIS WK</span></span>
+        </div>
+        <div class="kpi">
+          <span class="label">Renewals at risk · 90d</span>
+          <span class="value">$<span data-count="412">0</span>K</span>
+          <span class="meta">14 contracts uncommitted <span class="chip critical"><span class="sq"></span>ACT NOW</span></span>
+        </div>
+        <div class="kpi">
+          <span class="label">Certified engineers</span>
+          <span class="value"><span data-count="14">0</span></span>
+          <span class="meta">FCP / FCSS on staff <span class="chip serious"><span class="sq"></span>3 EXPIRING 60D</span></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======== CHART ROW ======== -->
+    <section class="charts" aria-label="Performance charts">
+
+      <!-- Quarterly bookings — single series columns -->
+      <div class="card">
+        <h2>Bookings by quarter</h2>
+        <p class="sub">USD thousands · FY25 Q3 → FY26 Q3 (QTD)</p>
+        <div class="chart-wrap">
+          <svg class="chart" viewBox="0 0 380 210" width="100%" role="img" aria-label="Column chart of quarterly bookings, table below">
+            <g>
+              <line class="gridline" x1="42" x2="372" y1="16"  y2="16"/><text x="36" y="19" text-anchor="end">1,200</text>
+              <line class="gridline" x1="42" x2="372" y1="68"  y2="68"/><text x="36" y="71" text-anchor="end">800</text>
+              <line class="gridline" x1="42" x2="372" y1="120" y2="120"/><text x="36" y="123" text-anchor="end">400</text>
+              <line class="baseline" x1="42" x2="372" y1="172" y2="172"/><text x="36" y="175" text-anchor="end">0</text>
+            </g>
+            <!-- 1200 ≙ 156px span; x bands centered at 80,138,196,254,312; bar w 24 -->
+            <g id="qBars">
+              <g class="mark" tabindex="0" data-tip="$620K" data-lab="FY25 Q3">
+                <rect x="68"  y="91.4" width="24" height="80.6" rx="4" fill="#1E8AAD"/><rect x="68" y="168" width="24" height="4" fill="#1E8AAD"/>
+              </g>
+              <g class="mark" tabindex="0" data-tip="$705K" data-lab="FY25 Q4">
+                <rect x="126" y="80.4" width="24" height="91.6" rx="4" fill="#1E8AAD"/><rect x="126" y="168" width="24" height="4" fill="#1E8AAD"/>
+              </g>
+              <g class="mark" tabindex="0" data-tip="$1,180K" data-lab="FY26 Q1">
+                <rect x="184" y="18.6" width="24" height="153.4" rx="4" fill="#1E8AAD"/><rect x="184" y="168" width="24" height="4" fill="#1E8AAD"/>
+              </g>
+              <g class="mark" tabindex="0" data-tip="$1,120K" data-lab="FY26 Q2">
+                <rect x="242" y="26.4" width="24" height="145.6" rx="4" fill="#1E8AAD"/><rect x="242" y="168" width="24" height="4" fill="#1E8AAD"/>
+              </g>
+              <g class="mark" tabindex="0" data-tip="$310K QTD" data-lab="FY26 Q3 · wk 3 of 13">
+                <rect x="300" y="131.7" width="24" height="40.3" rx="4" fill="#49C0E3"/><rect x="300" y="168" width="24" height="4" fill="#49C0E3"/>
+                <text class="dlabel" x="312" y="124" text-anchor="middle">310</text>
+              </g>
+            </g>
+            <g>
+              <text x="80"  y="192" text-anchor="middle">Q3'25</text>
+              <text x="138" y="192" text-anchor="middle">Q4'25</text>
+              <text x="196" y="192" text-anchor="middle">Q1'26</text>
+              <text x="254" y="192" text-anchor="middle">Q2'26</text>
+              <text x="312" y="192" text-anchor="middle">Q3'26</text>
+            </g>
+          </svg>
+        </div>
+        <details class="dataview">
+          <summary>View data</summary>
+          <table>
+            <thead><tr><th>Quarter</th><th class="num">Bookings (USD K)</th></tr></thead>
+            <tbody>
+              <tr><td>FY25 Q3</td><td class="num">620</td></tr>
+              <tr><td>FY25 Q4</td><td class="num">705</td></tr>
+              <tr><td>FY26 Q1</td><td class="num">1,180</td></tr>
+              <tr><td>FY26 Q2</td><td class="num">1,120</td></tr>
+              <tr><td>FY26 Q3 (QTD)</td><td class="num">310</td></tr>
+            </tbody>
+          </table>
+        </details>
+      </div>
+
+      <!-- Pipeline by stage — ordinal funnel -->
+      <div class="card">
+        <h2>Pipeline by stage</h2>
+        <p class="sub">open opportunities · USD millions</p>
+        <div class="chart-wrap">
+          <svg class="chart" viewBox="0 0 380 210" width="100%" role="img" aria-label="Funnel of pipeline by stage, table below">
+            <!-- rows y: 14,52,90,128,166 h=24; max 2.4M ≙ 250px -->
+            <g id="funnel">
+              <g class="mark" tabindex="0" data-tip="$2.4M" data-lab="Discovery">
+                <text x="88" y="30" text-anchor="end" class="node-value">Discovery</text>
+                <rect x="96" y="14" width="250" height="24" rx="4" fill="#14536A"/>
+                <text class="dlabel" x="352" y="30">2.4</text>
+              </g>
+              <g class="mark" tabindex="0" data-tip="$1.9M" data-lab="Qualified">
+                <text x="88" y="68" text-anchor="end" class="node-value">Qualified</text>
+                <rect x="96" y="52" width="198" height="24" rx="4" fill="#186E8C"/>
+                <text class="dlabel" x="300" y="68">1.9</text>
+              </g>
+              <g class="mark" tabindex="0" data-tip="$1.3M" data-lab="Proposal">
+                <text x="88" y="106" text-anchor="end" class="node-value">Proposal</text>
+                <rect x="96" y="90" width="135" height="24" rx="4" fill="#1E8AAD"/>
+                <text class="dlabel" x="237" y="106">1.3</text>
+              </g>
+              <g class="mark" tabindex="0" data-tip="$0.8M" data-lab="Negotiation">
+                <text x="88" y="144" text-anchor="end" class="node-value">Negotiation</text>
+                <rect x="96" y="128" width="83" height="24" rx="4" fill="#2AA6CC"/>
+                <text class="dlabel" x="185" y="144">0.8</text>
+              </g>
+              <g class="mark" tabindex="0" data-tip="$0.4M" data-lab="Committed">
+                <text x="88" y="182" text-anchor="end" class="node-value">Committed</text>
+                <rect x="96" y="166" width="42" height="24" rx="4" fill="#49C0E3"/>
+                <text class="dlabel" x="144" y="182">0.4</text>
+              </g>
+            </g>
+          </svg>
+        </div>
+        <details class="dataview">
+          <summary>View data</summary>
+          <table>
+            <thead><tr><th>Stage</th><th class="num">Open value (USD M)</th></tr></thead>
+            <tbody>
+              <tr><td>Discovery</td><td class="num">2.4</td></tr>
+              <tr><td>Qualified</td><td class="num">1.9</td></tr>
+              <tr><td>Proposal</td><td class="num">1.3</td></tr>
+              <tr><td>Negotiation</td><td class="num">0.8</td></tr>
+              <tr><td>Committed</td><td class="num">0.4</td></tr>
+            </tbody>
+          </table>
+        </details>
+      </div>
+
+      <!-- Product mix — stacked bar, 5 categorical slots -->
+      <div class="card">
+        <h2>Product mix · FY26 YTD</h2>
+        <p class="sub">share of $2.61M bookings — replaces the donut</p>
+        <div class="chart-wrap">
+          <svg class="chart" viewBox="0 0 380 84" width="100%" role="img" aria-label="Stacked bar of product mix, table below">
+            <!-- total width 360, 2px gaps: FG 48%→171, SASE 17%→60, LAN 14%→49, SecOps 12%→42, Svc 9%→30 -->
+            <g id="mixBar">
+              <g class="mark" tabindex="0" data-tip="$1.25M · 48%" data-lab="FortiGate" data-c="#189EC0">
+                <rect x="10"  y="22" width="171" height="26" rx="4" fill="#189EC0"/>
+                <text x="95" y="39" text-anchor="middle" style="font:600 11px var(--sans);fill:#04161C">FortiGate 48%</text>
+              </g>
+              <g class="mark" tabindex="0" data-tip="$445K · 17%" data-lab="FortiSASE" data-c="#D55181">
+                <rect x="183" y="22" width="60" height="26" rx="4" fill="#D55181"/>
+              </g>
+              <g class="mark" tabindex="0" data-tip="$366K · 14%" data-lab="LAN Edge" data-c="#C98500">
+                <rect x="245" y="22" width="49" height="26" rx="4" fill="#C98500"/>
+              </g>
+              <g class="mark" tabindex="0" data-tip="$310K · 12%" data-lab="Security Ops" data-c="#9085E9">
+                <rect x="296" y="22" width="42" height="26" rx="4" fill="#9085E9"/>
+              </g>
+              <g class="mark" tabindex="0" data-tip="$235K · 9%" data-lab="Services" data-c="#199E70">
+                <rect x="340" y="22" width="30" height="26" rx="4" fill="#199E70"/>
+              </g>
+            </g>
+          </svg>
+          <div class="legend" role="list">
+            <span class="item" role="listitem"><span class="swatch" style="background:#189EC0"></span>FortiGate</span>
+            <span class="item" role="listitem"><span class="swatch" style="background:#D55181"></span>FortiSASE</span>
+            <span class="item" role="listitem"><span class="swatch" style="background:#C98500"></span>LAN Edge</span>
+            <span class="item" role="listitem"><span class="swatch" style="background:#9085E9"></span>Security Ops</span>
+            <span class="item" role="listitem"><span class="swatch" style="background:#199E70"></span>Services</span>
+          </div>
+        </div>
+        <details class="dataview">
+          <summary>View data</summary>
+          <table>
+            <thead><tr><th>Pillar</th><th class="num">Bookings</th><th class="num">Share</th></tr></thead>
+            <tbody>
+              <tr><td>FortiGate</td><td class="num">$1,254K</td><td class="num">48%</td></tr>
+              <tr><td>FortiSASE</td><td class="num">$445K</td><td class="num">17%</td></tr>
+              <tr><td>LAN Edge</td><td class="num">$366K</td><td class="num">14%</td></tr>
+              <tr><td>Security Ops</td><td class="num">$310K</td><td class="num">12%</td></tr>
+              <tr><td>Services</td><td class="num">$235K</td><td class="num">9%</td></tr>
+            </tbody>
+          </table>
+        </details>
+      </div>
+    </section>
+
+    <p class="footnote">PROTOTYPE · ALL FIGURES ILLUSTRATIVE · FABRIC COMMAND / OPTION 1 OF 3</p>
+  </main>
+</div>
+
+<div class="tip" id="tip" role="status" aria-hidden="true">
+  <div class="t-val" id="tipVal"></div>
+  <div class="t-lab"><span class="t-key" id="tipKey"></span><span id="tipLab"></span></div>
+</div>
+
+<script>
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* clock */
+  const clock = document.getElementById('clock');
+  function tick() {
+    const d = new Date();
+    clock.textContent = d.toLocaleDateString('en-CA', { month: 'short', day: '2-digit' }).toUpperCase()
+      + ' · ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+  tick(); setInterval(tick, 1000);
+
+  /* count-ups */
+  document.querySelectorAll('[data-count]').forEach(el => {
+    const target = parseFloat(el.dataset.count);
+    const dec = parseInt(el.dataset.dec || '0', 10);
+    if (reduced) { el.textContent = target.toFixed(dec); return; }
+    const t0 = performance.now(), dur = 1400;
+    (function step(t) {
+      const p = Math.min((t - t0) / dur, 1), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = (target * e).toFixed(dec);
+      if (p < 1) requestAnimationFrame(step);
+    })(t0);
+  });
+
+  /* tooltips — hover + keyboard focus, textContent only */
+  const tip = document.getElementById('tip'),
+        tipVal = document.getElementById('tipVal'),
+        tipLab = document.getElementById('tipLab'),
+        tipKey = document.getElementById('tipKey');
+  function showTip(mark, x, y) {
+    tipVal.textContent = mark.dataset.tip;
+    tipLab.textContent = mark.dataset.lab;
+    tipKey.style.background = mark.dataset.c || 'var(--accent)';
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+    tip.style.opacity = 1; tip.setAttribute('aria-hidden', 'false');
+  }
+  function hideTip() { tip.style.opacity = 0; tip.setAttribute('aria-hidden', 'true'); }
+  document.querySelectorAll('.mark').forEach(m => {
+    m.addEventListener('pointermove', e => showTip(m, e.clientX, e.clientY));
+    m.addEventListener('pointerleave', hideTip);
+    m.addEventListener('focus', () => {
+      const r = m.getBoundingClientRect();
+      showTip(m, r.left + r.width / 2, r.top);
+    });
+    m.addEventListener('blur', hideTip);
+  });
+</script>
+</body>
+</html>

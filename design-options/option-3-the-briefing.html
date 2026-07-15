@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Option 3 · The Briefing — Fortinet Partner Dashboard</title>
+<style>
+  /* ============================================================
+     OPTION 3 — THE BRIEFING
+     An executive morning briefing, not a monitoring wall.
+     Light, editorial, calm motion. Reads top-to-bottom like a
+     one-page memo: what needs attention, where the quarter
+     stands, what to do next. Built for the QBR-facing side of
+     the same seller.
+     Palette validated (dataviz six checks) on surface #FAF9F7:
+       categorical  #1187A8 #EDA100 #4A3AA7 #008300 #E87BA4
+       (yellow & magenta sit in the contrast relief band —
+        legend + data tables ship on every chart as relief)
+       ordinal ramp #7AB8C9 #54A0B4 #33879E #1C6D84 #0D5368
+     ============================================================ */
+  :root {
+    --page:      #FAF9F7;
+    --surface:   #FFFFFF;
+    --ink:       #17170F;
+    --ink-2:     #55534E;
+    --muted:     #8B8983;
+    --hairline:  rgba(23,23,15,0.10);
+    --grid:      #ECEBE6;
+    --brand:     #DA291C;           /* Fortinet red — chrome only, never a series */
+    --teal:      #1187A8;           /* slot 1 + single-series hue */
+    --teal-wash: rgba(17,135,168,0.10);
+    --track:     #D9EAEF;           /* meter track — lighter step, same ramp */
+    --good:      #0CA30C;
+    --warning:   #FAB219;
+    --critical:  #D03B3B;
+    --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+    --sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: var(--page); color: var(--ink); font-family: var(--sans); }
+  ::selection { background: rgba(218,41,28,0.15); }
+  body { font-size: 14px; line-height: 1.5; }
+
+  .page { max-width: 1080px; margin: 0 auto; padding: 0 32px 90px; }
+
+  /* ---------- masthead ---------- */
+  .masthead {
+    display: flex; align-items: center; gap: 14px; padding: 22px 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .masthead .fmark { width: 30px; height: 30px; border-radius: 7px; background: var(--brand); display: grid; place-items: center; }
+  .masthead .who { font-weight: 600; font-size: 14px; }
+  .masthead .who span { color: var(--muted); font-weight: 400; }
+  .masthead .grow { flex: 1; }
+  .masthead nav { display: flex; gap: 4px; }
+  .masthead nav a {
+    text-decoration: none; color: var(--ink-2); font-size: 13px; font-weight: 500;
+    padding: 7px 13px; border-radius: 99px; transition: background .2s, color .2s;
+  }
+  .masthead nav a:hover { background: #F1F0EB; color: var(--ink); }
+  .masthead nav a.on { background: var(--ink); color: #fff; }
+  .btn-brand {
+    font: 600 13px var(--sans); color: #fff; background: var(--brand); border: none;
+    padding: 9px 16px; border-radius: 99px; cursor: pointer;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .btn-brand:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(218,41,28,0.3); }
+
+  /* ---------- greeting ---------- */
+  .greeting { padding: 54px 0 8px; }
+  .kicker { font: 600 11px var(--mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--brand); }
+  h1.headline { font: 400 44px/1.15 var(--serif); letter-spacing: -0.01em; margin-top: 12px; max-width: 21ch; }
+  .dateline { margin-top: 10px; color: var(--muted); font-size: 13px; }
+
+  /* ---------- reveal motion ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal.d1 { transition-delay: .08s; } .reveal.d2 { transition-delay: .16s; } .reveal.d3 { transition-delay: .24s; }
+
+  section.block { margin-top: 56px; }
+  .block-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 20px; }
+  .block-head h2 { font: 400 24px var(--serif); }
+  .block-head .note { color: var(--muted); font-size: 12px; }
+  .block-head .rule { flex: 1; height: 1px; background: var(--hairline); }
+
+  /* ---------- attention list ---------- */
+  .attention { display: grid; gap: 10px; margin-top: 34px; }
+  .att-item {
+    display: flex; align-items: center; gap: 16px;
+    text-decoration: none; color: inherit;
+    background: var(--surface); border: 1px solid var(--hairline); border-radius: 14px;
+    padding: 16px 20px; transition: transform .25s, box-shadow .25s;
+  }
+  .att-item:hover { transform: translateX(4px); box-shadow: 0 8px 24px rgba(23,23,15,0.06); }
+  .att-idx { font: 400 22px var(--serif); color: var(--muted); width: 22px; flex: none; }
+  .att-body { flex: 1; }
+  .att-body b { font-weight: 600; }
+  .att-body .why { display: block; color: var(--ink-2); font-size: 12.5px; margin-top: 2px; }
+  .sev { display: inline-flex; align-items: center; gap: 6px; font: 600 10.5px var(--mono); letter-spacing: 0.1em; padding: 4px 10px; border-radius: 99px; flex: none; }
+  .sev svg { flex: none; }
+  .sev.crit { color: #8E1F1F; background: rgba(208,59,59,0.1); }
+  .sev.warn { color: #7A5200; background: rgba(250,178,25,0.14); }
+  .sev.info { color: #0B5B71; background: rgba(17,135,168,0.1); }
+  .att-go { color: var(--muted); flex: none; transition: color .2s, transform .2s; }
+  .att-item:hover .att-go { color: var(--brand); transform: translateX(3px); }
+
+  /* ---------- hero standing ---------- */
+  .standing {
+    background: var(--surface); border: 1px solid var(--hairline); border-radius: 18px;
+    padding: 34px 36px; display: grid; grid-template-columns: 1.3fr 1fr; gap: 40px;
+  }
+  .hero-num { font-size: 76px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+  .hero-num .pct { font-size: 34px; color: var(--ink-2); font-weight: 500; }
+  .hero-cap { color: var(--ink-2); margin-top: 10px; font-size: 14px; }
+  .hero-cap b { color: var(--ink); }
+  .meter { position: relative; height: 12px; border-radius: 6px; background: var(--track); margin-top: 24px; }
+  .meter .fill {
+    position: absolute; inset: 0 auto 0 0; width: 0%; border-radius: 6px;
+    background: linear-gradient(90deg, #33879E, #1187A8);
+    transition: width 1.5s cubic-bezier(.22,1,.36,1) .3s;
+  }
+  .meter .pace { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--ink); left: 53.7%; }
+  .meter .pace::after {
+    content: "pace"; position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+    font: 500 10px var(--mono); color: var(--muted); letter-spacing: 0.08em;
+  }
+  .meter-scale { display: flex; justify-content: space-between; font: 500 10px var(--mono); color: var(--muted); margin-top: 8px; }
+  .standing-side { border-left: 1px solid var(--hairline); padding-left: 40px; display: grid; gap: 18px; align-content: center; }
+  .mini { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .mini .k { color: var(--ink-2); font-size: 13px; }
+  .mini .v { font-weight: 700; font-size: 17px; white-space: nowrap; }
+  .mini .v small { color: var(--good); font-weight: 600; font-size: 11px; }
+
+  /* ---------- charts ---------- */
+  .duo { display: grid; grid-template-columns: 1.35fr 1fr; gap: 18px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--hairline); border-radius: 16px;
+    padding: 22px 24px 16px;
+  }
+  .card h3 { font-size: 14px; font-weight: 600; }
+  .card .sub { color: var(--muted); font-size: 12px; margin-bottom: 16px; }
+  svg.chart { display: block; }
+  svg.chart text { font: 500 10px var(--mono); fill: var(--muted); }
+  svg.chart .dlabel { font: 600 11px var(--sans); fill: var(--ink); }
+  svg.chart .gridline { stroke: var(--grid); stroke-width: 1; }
+  svg.chart .baseline { stroke: #D8D6CE; stroke-width: 1; }
+  .chart-wrap { position: relative; }
+  .xhair { position: absolute; top: 6px; bottom: 34px; width: 1px; background: rgba(23,23,15,0.25); opacity: 0; pointer-events: none; }
+  .mark { cursor: pointer; outline: none; }
+  .mark:hover rect { filter: brightness(1.12); }
+  .mark:focus-visible rect, .mark:focus-visible circle { stroke: var(--brand); stroke-width: 2; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 14px; }
+  .legend .item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-2); }
+  .legend .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+  /* certifications */
+  .cert-grid { display: grid; grid-template-columns: 190px 1fr; gap: 30px; align-items: center; }
+  .ring-wrap { position: relative; width: 150px; height: 150px; margin: 0 auto; }
+  .ring-wrap svg { transform: rotate(-90deg); }
+  .ring-track { fill: none; stroke: var(--track); stroke-width: 10; }
+  .ring-fill {
+    fill: none; stroke: var(--teal); stroke-width: 10; stroke-linecap: round;
+    stroke-dasharray: 326.7; stroke-dashoffset: 326.7;
+    transition: stroke-dashoffset 1.6s cubic-bezier(.22,1,.36,1) .2s;
+  }
+  .ring-label { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+  .ring-label .n { font-size: 30px; font-weight: 700; line-height: 1; }
+  .ring-label .c { font-size: 10.5px; color: var(--muted); margin-top: 4px; }
+  table.plain { width: 100%; border-collapse: collapse; }
+  table.plain th {
+    text-align: left; font: 600 10.5px var(--mono); letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--hairline);
+  }
+  table.plain td { padding: 10px; border-bottom: 1px solid var(--grid); font-size: 13px; color: var(--ink-2); }
+  table.plain td:first-child { color: var(--ink); font-weight: 500; }
+  table.plain tr:last-child td { border-bottom: none; }
+  .pill { display: inline-flex; align-items: center; gap: 5px; font: 600 10.5px var(--mono); padding: 3px 9px; border-radius: 99px; }
+  .pill.ok   { color: #0A5D0A; background: rgba(12,163,12,0.1); }
+  .pill.exp  { color: #7A5200; background: rgba(250,178,25,0.16); }
+
+  /* next actions */
+  .actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .action {
+    background: var(--surface); border: 1px solid var(--hairline); border-radius: 16px;
+    text-decoration: none; color: inherit;
+    padding: 20px; display: flex; flex-direction: column; gap: 8px;
+    transition: transform .25s, box-shadow .25s, border-color .25s;
+  }
+  .action:hover { transform: translateY(-4px); box-shadow: 0 14px 34px rgba(23,23,15,0.08); border-color: rgba(218,41,28,0.3); }
+  .action .tag { font: 600 10px var(--mono); letter-spacing: 0.14em; color: var(--brand); }
+  .action h4 { font-size: 14.5px; font-weight: 600; line-height: 1.35; }
+  .action p { font-size: 12.5px; color: var(--ink-2); flex: 1; }
+  .action .go { font-size: 13px; font-weight: 600; color: var(--ink); display: inline-flex; gap: 6px; align-items: center; }
+  .action:hover .go { color: var(--brand); }
+
+  /* tooltip */
+  .tip {
+    position: fixed; z-index: 60; pointer-events: none; opacity: 0;
+    background: var(--ink); color: #fff; border-radius: 8px; padding: 8px 11px;
+    transform: translate(-50%, calc(-100% - 12px)); transition: opacity .12s;
+    box-shadow: 0 10px 30px rgba(23,23,15,0.25);
+  }
+  .tip .t-val { font: 700 15px var(--sans); }
+  .tip .t-lab { display: flex; align-items: center; gap: 6px; font: 500 10.5px var(--mono); opacity: .75; margin-top: 2px; }
+  .tip .t-key { width: 10px; height: 2px; border-radius: 1px; background: var(--teal); }
+
+  details.dataview { margin-top: 12px; border-top: 1px solid var(--hairline); padding-top: 9px; }
+  details.dataview summary { cursor: pointer; font: 600 10.5px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); list-style: none; }
+  details.dataview summary:hover { color: var(--brand); }
+  details.dataview table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  details.dataview th, details.dataview td {
+    text-align: right; font-size: 12px; padding: 5px 8px; color: var(--ink-2);
+    border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums;
+  }
+  details.dataview th:first-child, details.dataview td:first-child { text-align: left; }
+
+  .footnote { margin-top: 64px; font: 500 10px var(--mono); letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase; }
+
+  @media (max-width: 900px) {
+    .standing, .duo, .cert-grid, .actions { grid-template-columns: 1fr; }
+    .standing-side { border-left: none; padding-left: 0; border-top: 1px solid var(--hairline); padding-top: 24px; }
+    h1.headline { font-size: 34px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .reveal { opacity: 1; transform: none; }
+    .meter .fill { width: 65.2% !important; }
+    .ring-fill { stroke-dashoffset: 58.8 !important; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ======== MASTHEAD ======== -->
+  <header class="masthead">
+    <span class="fmark"><svg width="14" height="14" viewBox="0 0 16 16"><path d="M1 2h14v3.4H1zM1 6.3h9.2v3.4H1zM1 10.6h14V14H1z" fill="#fff"/></svg></span>
+    <span class="who">CDW Canada <span>· Advanced Partner · FY26</span></span>
+    <div class="grow"></div>
+    <nav aria-label="Primary">
+      <a class="on" href="#">Briefing</a><a href="#">Pipeline</a><a href="#">Renewals</a><a href="#">Enablement</a>
+    </nav>
+    <button class="btn-brand">Register a deal</button>
+  </header>
+
+  <!-- ======== GREETING ======== -->
+  <section class="greeting">
+    <span class="kicker" id="kicker">Partner briefing · —</span>
+    <h1 class="headline">You're ahead of pace, and three things need your attention.</h1>
+    <p class="dateline">Prepared for the CDW Canada Fortinet practice · figures illustrative · refreshed <span id="refreshed">—</span></p>
+  </section>
+
+  <!-- ======== ATTENTION ======== -->
+  <div class="attention">
+    <a class="att-item reveal" href="#">
+      <span class="att-idx">1</span>
+      <span class="sev crit"><svg width="11" height="11" viewBox="0 0 12 12"><path d="M6 1 11 10H1L6 1Z" fill="#D03B3B"/></svg>CRITICAL</span>
+      <span class="att-body"><b>Re-file Harbourview College's deal registration.</b>
+        <span class="why">Protection lapses in 6 days — a $132K FortiGate + FortiSwitch opportunity loses pricing cover.</span></span>
+      <span class="att-go">→</span>
+    </a>
+    <a class="att-item reveal d1" href="#">
+      <span class="att-idx">2</span>
+      <span class="sev warn"><svg width="11" height="11" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5" fill="#FAB219"/></svg>WATCH</span>
+      <span class="att-body"><b>$412K of renewals sit uncommitted inside 90 days.</b>
+        <span class="why">Three contracts cover 61% of the exposure — start with Selkirk Energy's FortiCare bundle.</span></span>
+      <span class="att-go">→</span>
+    </a>
+    <a class="att-item reveal d2" href="#">
+      <span class="att-idx">3</span>
+      <span class="sev info"><svg width="11" height="11" viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" rx="2" fill="#1187A8"/></svg>OPPORTUNITY</span>
+      <span class="att-body"><b>The FortiSASE Fast-Track margin window closes July 27.</b>
+        <span class="why">Two open SASE deals qualify — quoting this week is worth roughly four margin points.</span></span>
+      <span class="att-go">→</span>
+    </a>
+  </div>
+
+  <!-- ======== STANDING ======== -->
+  <section class="block reveal">
+    <div class="block-head"><h2>Where the year stands</h2><span class="rule"></span><span class="note">FY26 · day 196 of 365</span></div>
+    <div class="standing">
+      <div>
+        <div class="hero-num"><span data-count="65.2" data-dec="1">0</span><span class="pct">%</span></div>
+        <p class="hero-cap"><b>$2.61M</b> booked against a <b>$4.0M</b> Fortinet target — 11.5 points ahead of calendar pace.</p>
+        <div class="meter" role="meter" aria-valuenow="65.2" aria-valuemin="0" aria-valuemax="100" aria-label="FY26 attainment 65.2 percent; calendar pace 53.7 percent">
+          <div class="fill" id="fill"></div><div class="pace"></div>
+        </div>
+        <div class="meter-scale"><span>$0</span><span>$1M</span><span>$2M</span><span>$3M</span><span>$4M target</span></div>
+      </div>
+      <div class="standing-side">
+        <div class="mini"><span class="k">Open pipeline</span><span class="v">$6.8M <small>3.4× coverage</small></span></div>
+        <div class="mini"><span class="k">Registered deals</span><span class="v">23 active</span></div>
+        <div class="mini"><span class="k">Best quarter so far</span><span class="v">Q1 · $1.18M</span></div>
+        <div class="mini"><span class="k">Growth vs FY25 YTD</span><span class="v">+38% <small>▲</small></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======== THE QUARTER'S SHAPE ======== -->
+  <section class="block reveal">
+    <div class="block-head"><h2>The shape of the year</h2><span class="rule"></span><span class="note">monthly bookings · USD thousands</span></div>
+    <div class="duo">
+      <div class="card">
+        <h3>Monthly bookings</h3>
+        <p class="sub">January – July FY26 · July is month-to-date</p>
+        <div class="chart-wrap" id="lineWrap">
+          <svg class="chart" viewBox="0 0 720 240" width="100%" role="img" aria-label="Line chart of monthly bookings, table below">
+            <g>
+              <line class="gridline" x1="50" x2="700" y1="16"  y2="16"/><text x="42" y="19" text-anchor="end">450</text>
+              <line class="gridline" x1="50" x2="700" y1="76"  y2="76"/><text x="42" y="79" text-anchor="end">300</text>
+              <line class="gridline" x1="50" x2="700" y1="136" y2="136"/><text x="42" y="139" text-anchor="end">150</text>
+              <line class="baseline" x1="50" x2="700" y1="196" y2="196"/><text x="42" y="199" text-anchor="end">0</text>
+            </g>
+            <path d="M50 54 L158.3 47.2 L266.7 14.8 L375 60 L483.3 52.8 L591.7 27.2 L700 72 L700 196 L50 196 Z"
+                  fill="rgba(17,135,168,0.10)" stroke="none"/>
+            <path d="M50 54 L158.3 47.2 L266.7 14.8 L375 60 L483.3 52.8 L591.7 27.2 L700 72"
+                  fill="none" stroke="#1187A8" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+            <circle cx="266.7" cy="14.8" r="6.5" fill="#FAF9F7"/><circle cx="266.7" cy="14.8" r="4.5" fill="#1187A8"/>
+            <circle cx="700" cy="72" r="6.5" fill="#FAF9F7"/><circle cx="700" cy="72" r="4.5" fill="#1187A8"/>
+            <text class="dlabel" x="280" y="24">453 · best month</text>
+            <text class="dlabel" x="694" y="94" text-anchor="end">310 MTD</text>
+            <g>
+              <text x="50"  y="222" text-anchor="middle">JAN</text><text x="158.3" y="222" text-anchor="middle">FEB</text>
+              <text x="266.7" y="222" text-anchor="middle">MAR</text><text x="375" y="222" text-anchor="middle">APR</text>
+              <text x="483.3" y="222" text-anchor="middle">MAY</text><text x="591.7" y="222" text-anchor="middle">JUN</text>
+              <text x="700" y="222" text-anchor="middle">JUL</text>
+            </g>
+          </svg>
+          <div class="xhair" id="xhair"></div>
+        </div>
+        <details class="dataview">
+          <summary>View data</summary>
+          <table>
+            <thead><tr><th>Month</th><th>Bookings (USD K)</th></tr></thead>
+            <tbody>
+              <tr><td>January</td><td>355</td></tr><tr><td>February</td><td>372</td></tr>
+              <tr><td>March</td><td>453</td></tr><tr><td>April</td><td>340</td></tr>
+              <tr><td>May</td><td>358</td></tr><tr><td>June</td><td>422</td></tr>
+              <tr><td>July (MTD)</td><td>310</td></tr>
+            </tbody>
+          </table>
+        </details>
+      </div>
+
+      <div class="card">
+        <h3>Pipeline by stage</h3>
+        <p class="sub">open opportunities · USD millions</p>
+        <svg class="chart" viewBox="0 0 340 210" width="100%" role="img" aria-label="Funnel of pipeline by stage, table below">
+          <g id="funnelL">
+            <g class="mark" tabindex="0" data-tip="$2.4M" data-lab="Discovery" data-c="#7AB8C9">
+              <text x="82" y="30" text-anchor="end">Discovery</text>
+              <rect x="90" y="14" width="222" height="24" rx="4" fill="#7AB8C9"/>
+              <text class="dlabel" x="318" y="30">2.4</text>
+            </g>
+            <g class="mark" tabindex="0" data-tip="$1.9M" data-lab="Qualified" data-c="#54A0B4">
+              <text x="82" y="68" text-anchor="end">Qualified</text>
+              <rect x="90" y="52" width="176" height="24" rx="4" fill="#54A0B4"/>
+              <text class="dlabel" x="272" y="68">1.9</text>
+            </g>
+            <g class="mark" tabindex="0" data-tip="$1.3M" data-lab="Proposal" data-c="#33879E">
+              <text x="82" y="106" text-anchor="end">Proposal</text>
+              <rect x="90" y="90" width="120" height="24" rx="4" fill="#33879E"/>
+              <text class="dlabel" x="216" y="106">1.3</text>
+            </g>
+            <g class="mark" tabindex="0" data-tip="$0.8M" data-lab="Negotiation" data-c="#1C6D84">
+              <text x="82" y="144" text-anchor="end">Negotiation</text>
+              <rect x="90" y="128" width="74" height="24" rx="4" fill="#1C6D84"/>
+              <text class="dlabel" x="170" y="144">0.8</text>
+            </g>
+            <g class="mark" tabindex="0" data-tip="$0.4M" data-lab="Committed" data-c="#0D5368">
+              <text x="82" y="182" text-anchor="end">Committed</text>
+              <rect x="90" y="166" width="37" height="24" rx="4" fill="#0D5368"/>
+              <text class="dlabel" x="133" y="182">0.4</text>
+            </g>
+          </g>
+        </svg>
+        <details class="dataview">
+          <summary>View data</summary>
+          <table>
+            <thead><tr><th>Stage</th><th>Open value (USD M)</th></tr></thead>
+            <tbody>
+              <tr><td>Discovery</td><td>2.4</td></tr><tr><td>Qualified</td><td>1.9</td></tr>
+              <tr><td>Proposal</td><td>1.3</td></tr><tr><td>Negotiation</td><td>0.8</td></tr>
+              <tr><td>Committed</td><td>0.4</td></tr>
+            </tbody>
+          </table>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======== MIX ======== -->
+  <section class="block reveal">
+    <div class="block-head"><h2>What you're selling</h2><span class="rule"></span><span class="note">share of $2.61M YTD bookings</span></div>
+    <div class="card">
+      <svg class="chart" viewBox="0 0 1000 70" width="100%" role="img" aria-label="Stacked bar of product mix, table below">
+        <!-- width 980, 2px gaps · FG 48%→464, SASE 17%→164, LAN 14%→135, SecOps 12%→116, Svc 9%→85 -->
+        <g>
+          <g class="mark" tabindex="0" data-tip="$1.25M · 48%" data-lab="FortiGate" data-c="#1187A8">
+            <rect x="10" y="18" width="464" height="28" rx="4" fill="#1187A8"/>
+            <text x="242" y="36" text-anchor="middle" style="font:600 12px var(--sans);fill:#fff">FortiGate 48%</text>
+          </g>
+          <g class="mark" tabindex="0" data-tip="$445K · 17%" data-lab="FortiSASE" data-c="#EDA100">
+            <rect x="476" y="18" width="164" height="28" rx="4" fill="#EDA100"/>
+            <text x="558" y="36" text-anchor="middle" style="font:600 12px var(--sans);fill:#3A2A00">SASE 17%</text>
+          </g>
+          <g class="mark" tabindex="0" data-tip="$366K · 14%" data-lab="LAN Edge" data-c="#4A3AA7">
+            <rect x="642" y="18" width="135" height="28" rx="4" fill="#4A3AA7"/>
+            <text x="709.5" y="36" text-anchor="middle" style="font:600 12px var(--sans);fill:#fff">LAN 14%</text>
+          </g>
+          <g class="mark" tabindex="0" data-tip="$310K · 12%" data-lab="Security Ops" data-c="#008300">
+            <rect x="779" y="18" width="116" height="28" rx="4" fill="#008300"/>
+          </g>
+          <g class="mark" tabindex="0" data-tip="$235K · 9%" data-lab="Services" data-c="#E87BA4">
+            <rect x="897" y="18" width="85" height="28" rx="4" fill="#E87BA4"/>
+          </g>
+        </g>
+      </svg>
+      <div class="legend" role="list">
+        <span class="item" role="listitem"><span class="swatch" style="background:#1187A8"></span>FortiGate</span>
+        <span class="item" role="listitem"><span class="swatch" style="background:#EDA100"></span>FortiSASE</span>
+        <span class="item" role="listitem"><span class="swatch" style="background:#4A3AA7"></span>LAN Edge</span>
+        <span class="item" role="listitem"><span class="swatch" style="background:#008300"></span>Security Ops</span>
+        <span class="item" role="listitem"><span class="swatch" style="background:#E87BA4"></span>Services</span>
+      </div>
+      <details class="dataview">
+        <summary>View data</summary>
+        <table>
+          <thead><tr><th>Pillar</th><th>Bookings</th><th>Share</th></tr></thead>
+          <tbody>
+            <tr><td>FortiGate</td><td>$1,254K</td><td>48%</td></tr>
+            <tr><td>FortiSASE</td><td>$445K</td><td>17%</td></tr>
+            <tr><td>LAN Edge</td><td>$366K</td><td>14%</td></tr>
+            <tr><td>Security Ops</td><td>$310K</td><td>12%</td></tr>
+            <tr><td>Services</td><td>$235K</td><td>9%</td></tr>
+          </tbody>
+        </table>
+      </details>
+    </div>
+  </section>
+
+  <!-- ======== BENCH ======== -->
+  <section class="block reveal">
+    <div class="block-head"><h2>The bench</h2><span class="rule"></span><span class="note">certifications & specializations</span></div>
+    <div class="card">
+      <div class="cert-grid">
+        <div class="ring-wrap">
+          <svg width="150" height="150" viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="ring-track" cx="60" cy="60" r="52"/>
+            <circle class="ring-fill" id="ring" cx="60" cy="60" r="52"/>
+          </svg>
+          <div class="ring-label"><div><div class="n">14<span style="color:var(--muted);font-size:18px">/17</span></div><div class="c">engineers certified<br/>FCP / FCSS</div></div></div>
+        </div>
+        <div>
+          <table class="plain">
+            <thead><tr><th>Engineer</th><th>Highest cert</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>M. Tremblay</td><td>FCSS — Network Security</td><td><span class="pill ok">CURRENT</span></td></tr>
+              <tr><td>A. Osei</td><td>FCSS — SASE</td><td><span class="pill exp">EXPIRES AUG 30</span></td></tr>
+              <tr><td>J. Kaur</td><td>FCP — Public Cloud</td><td><span class="pill exp">EXPIRES SEP 12</span></td></tr>
+              <tr><td>R. Bouchard</td><td>FCP — Network Security</td><td><span class="pill exp">EXPIRES SEP 28</span></td></tr>
+              <tr><td>+ 10 more</td><td>—</td><td><span class="pill ok">CURRENT</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======== NEXT ======== -->
+  <section class="block reveal">
+    <div class="block-head"><h2>Best next moves</h2><span class="rule"></span><span class="note">ranked by estimated impact</span></div>
+    <div class="actions">
+      <a class="action reveal d1" href="#">
+        <span class="tag">ATTACH · ~$85K</span>
+        <h4>Add Security Ops to the Northbridge refresh</h4>
+        <p>Their team asked for FortiAnalyzer sizing last week. The refresh quote is still open — attach before it closes.</p>
+        <span class="go">Open the play →</span>
+      </a>
+      <a class="action reveal d2" href="#">
+        <span class="tag">DISPLACE · 3 ACCOUNTS</span>
+        <h4>Send the Meraki EOL trade-up kit</h4>
+        <p>Prairie CU, Harbourview, and Meridian all run gear that hits end-of-life inside 90 days.</p>
+        <span class="go">Open the play →</span>
+      </a>
+      <a class="action reveal d3" href="#">
+        <span class="tag">PROGRAM · TIER</span>
+        <h4>Book the Q3 QBR before August 15</h4>
+        <p>Advanced-tier review with your channel manager — three slots left, and tier credits close with the quarter.</p>
+        <span class="go">Open the play →</span>
+      </a>
+    </div>
+  </section>
+
+  <p class="footnote">Prototype · all figures illustrative · The Briefing / option 3 of 3</p>
+</div>
+
+<div class="tip" id="tip" role="status" aria-hidden="true">
+  <div class="t-val" id="tipVal"></div>
+  <div class="t-lab"><span class="t-key" id="tipKey"></span><span id="tipLab"></span></div>
+</div>
+
+<script>
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* dateline */
+  const now = new Date();
+  document.getElementById('kicker').textContent =
+    'Partner briefing · ' + now.toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' });
+  document.getElementById('refreshed').textContent =
+    now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+  /* scroll reveal */
+  if (reduced) {
+    document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'));
+  } else {
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+  }
+
+  /* count-up + meter + ring */
+  document.querySelectorAll('[data-count]').forEach(el => {
+    const target = parseFloat(el.dataset.count), dec = parseInt(el.dataset.dec || '0', 10);
+    if (reduced) { el.textContent = target.toFixed(dec); return; }
+    const t0 = performance.now(), dur = 1500;
+    (function step(t) {
+      const p = Math.min((t - t0) / dur, 1), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = (target * e).toFixed(dec);
+      if (p < 1) requestAnimationFrame(step);
+    })(t0);
+  });
+  requestAnimationFrame(() => {
+    document.getElementById('fill').style.width = '65.2%';
+    document.getElementById('ring').style.strokeDashoffset = 326.7 * (1 - 14 / 17);
+  });
+
+  /* tooltip */
+  const tip = document.getElementById('tip'), tipVal = document.getElementById('tipVal'),
+        tipLab = document.getElementById('tipLab'), tipKey = document.getElementById('tipKey');
+  function showTip(val, lab, c, x, y) {
+    tipVal.textContent = val; tipLab.textContent = lab;
+    tipKey.style.background = c || 'var(--teal)';
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+    tip.style.opacity = 1; tip.setAttribute('aria-hidden', 'false');
+  }
+  function hideTip() { tip.style.opacity = 0; tip.setAttribute('aria-hidden', 'true'); }
+  document.querySelectorAll('.mark').forEach(m => {
+    m.addEventListener('pointermove', e => showTip(m.dataset.tip, m.dataset.lab, m.dataset.c, e.clientX, e.clientY));
+    m.addEventListener('pointerleave', hideTip);
+    m.addEventListener('focus', () => { const r = m.getBoundingClientRect(); showTip(m.dataset.tip, m.dataset.lab, m.dataset.c, r.left + r.width / 2, r.top); });
+    m.addEventListener('blur', hideTip);
+  });
+
+  /* crosshair on the line chart — snaps to nearest month */
+  const months = [
+    ['January', 355, 50], ['February', 372, 158.3], ['March', 453, 266.7], ['April', 340, 375],
+    ['May', 358, 483.3], ['June', 422, 591.7], ['July (MTD)', 310, 700],
+  ];
+  const wrap = document.getElementById('lineWrap'), xhair = document.getElementById('xhair');
+  const svgEl = wrap.querySelector('svg');
+  wrap.addEventListener('pointermove', e => {
+    const r = svgEl.getBoundingClientRect();
+    const vx = (e.clientX - r.left) / r.width * 720;
+    let best = 0, bd = 1e9;
+    months.forEach((m, i) => { const d = Math.abs(m[2] - vx); if (d < bd) { bd = d; best = i; } });
+    const [name, val, mx] = months[best];
+    const px = mx / 720 * r.width;
+    xhair.style.left = px + 'px'; xhair.style.opacity = 1;
+    showTip('$' + val + 'K', name, '#1187A8', r.left + px, e.clientY);
+  });
+  wrap.addEventListener('pointerleave', () => { xhair.style.opacity = 0; hideTip(); });
+</script>
+</body>
+</html>
